@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrace - Povinná četba</title>
+    <link rel="stylesheet" href="../public/css/style.css">
+</head>
+
+<body class="admin-page">
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-brand">
+                <h1>Povinná četba - Administrace</h1>
+            </div>
+            <div class="navbar-menu">
+                <button id="logoutBtn" class="btn btn-secondary">Odhlásit se</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="admin-container">
+        <!-- Sidebar Navigation -->
+        <aside class="admin-sidebar">
+            <nav class="admin-nav">
+                <button class="admin-nav-item active" data-section="classes">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 7l7-4 7 4v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M7 17v-6h6v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Třídy
+                </button>
+                <button class="admin-nav-item" data-section="users">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M13 14c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zM13 14c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Uživatelé
+                </button>
+                <button class="admin-nav-item" data-section="books">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M2 3h6a4 4 0 014 4v10a3 3 0 00-3-3H2V3zM18 3h-6a4 4 0 00-4 4v10a3 3 0 013-3h7V3z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Knihy
+                </button>
+                <button class="admin-nav-item" data-section="authors">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M16 3l-4 4-4-4-4 4v10l4-4 4 4 4-4V3z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Autoři
+                </button>
+                <button class="admin-nav-item" data-section="categories">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 3h6v6H3V3zM11 3h6v6h-6V3zM3 11h6v6H3v-6zM11 11h6v6h-6v-6z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Kategorie
+                </button>
+            </nav>
+        </aside>
+
+        <!-- Content Area -->
+        <div class="admin-content">
+            <!-- Classes Section -->
+            <section id="classesSection" class="admin-section active">
+                <div class="section-header">
+                    <h2>Správa tříd</h2>
+                    <button id="addClassBtn" class="btn btn-primary">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        Přidat třídu
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Název</th>
+                                <th>Rok maturity</th>
+                                <th>Deadline</th>
+                                <th>Učitel češtiny</th>
+                                <th>Počet žáků</th>
+                                <th>Akce</th>
+                            </tr>
+                        </thead>
+                        <tbody id="classesTableBody">
+                            <!-- Dynamically populated -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Users Section -->
+            <section id="usersSection" class="admin-section">
+                <div class="section-header">
+                    <h2>Správa uživatelů</h2>
+                    <div class="header-actions">
+                        <button id="addUserBtn" class="btn btn-primary">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            Přidat uživatele
+                        </button>
+                        <button id="bulkRegisterBtn" class="btn btn-secondary">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M14 2H6a2 2 0 00-2 2v8M4 6H2a2 2 0 00-2 2v6a2 2 0 002 2h8a2 2 0 002-2v-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Hromadná registrace
+                        </button>
+                    </div>
+                </div>
+                <div class="filters-bar">
+                    <select id="userRoleFilter" class="filter-select">
+                        <option value="">Všechny role</option>
+                        <option value="student">Žáci</option>
+                        <option value="teacher">Učitelé</option>
+                        <option value="admin">Administrátoři</option>
+                    </select>
+                    <select id="userClassFilter" class="filter-select">
+                        <option value="">Všechny třídy</option>
+                        <!-- Dynamically populated -->
+                    </select>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Jméno</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Třída</th>
+                                <th>Akce</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <!-- Dynamically populated -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Books Section -->
+            <section id="booksSection" class="admin-section">
+                <div class="section-header">
+                    <h2>Správa knih</h2>
+                    <button id="addBookBtn" class="btn btn-primary">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        Přidat knihu
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Název</th>
+                                <th>Autor</th>
+                                <th>Literární druh</th>
+                                <th>Období</th>
+                                <th>Akce</th>
+                            </tr>
+                        </thead>
+                        <tbody id="booksTableBody">
+                            <!-- Dynamically populated -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Authors Section -->
+            <section id="authorsSection" class="admin-section">
+                <div class="section-header">
+                    <h2>Správa autorů</h2>
+                    <button id="addAuthorBtn" class="btn btn-primary">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        Přidat autora
+                    </button>
+                </div>
+                <div class="search-bar">
+                    <input type="text" id="authorSearch" class="search-input" placeholder="Hledat autora...">
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Jméno</th>
+                                <th>Příjmení</th>
+                                <th>Akce</th>
+                            </tr>
+                        </thead>
+                        <tbody id="authorsTableBody">
+                            <!-- Dynamically populated -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Categories Section -->
+            <section id="categoriesSection" class="admin-section">
+                <div class="section-header">
+                    <h2>Správa kategorií</h2>
+                </div>
+                
+                <!-- Literary Classes -->
+                <div class="category-subsection">
+                    <div class="subsection-header">
+                        <h3>Literární druhy</h3>
+                        <button id="addLiteraryClassBtn" class="btn btn-primary btn-sm">
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            Přidat
+                        </button>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Název</th>
+                                    <th>Min. počet</th>
+                                    <th>Max. počet</th>
+                                    <th>Akce</th>
+                                </tr>
+                            </thead>
+                            <tbody id="literaryClassesTableBody">
+                                <!-- Dynamically populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Periods -->
+                <div class="category-subsection">
+                    <div class="subsection-header">
+                        <h3>Období</h3>
+                        <button id="addPeriodBtn" class="btn btn-primary btn-sm">
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            Přidat
+                        </button>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Název</th>
+                                    <th>Min. počet</th>
+                                    <th>Max. počet</th>
+                                    <th>Akce</th>
+                                </tr>
+                            </thead>
+                            <tbody id="periodsTableBody">
+                                <!-- Dynamically populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Modal Container -->
+    <div id="modalContainer"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+        <p>Načítání...</p>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../public/js/utils.js"></script>
+    <script src="../public/js/api.js"></script>
+    <script src="../public/js/auth.js"></script>
+    <script src="../public/js/admin.js"></script>
+</body>
+
+</html>

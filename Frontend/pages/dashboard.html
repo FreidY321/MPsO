@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Můj seznam četby - Povinná četba</title>
+    <link rel="stylesheet" href="../public/css/style.css">
+</head>
+
+<body class="dashboard-page">
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-brand">
+                <h1>Povinná četba</h1>
+            </div>
+            <div class="navbar-menu">
+                <a href="dashboard.html" class="nav-link active">Můj seznam</a>
+                <a href="textbooks.html" class="nav-link">Prohlížet knihy</a>
+                <button id="logoutBtn" class="btn btn-secondary">Odhlásit se</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="dashboard-container">
+        <!-- User Info Section -->
+        <section class="user-info-section">
+            <div class="user-welcome">
+                <h2>Vítejte, <span id="userName"></span></h2>
+                <p class="user-class">Třída: <span id="userClass"></span></p>
+            </div>
+            <div class="actions">
+                <button id="printPdfBtn" class="btn btn-primary">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4 5V1h8v4M4 11H2a1 1 0 01-1-1V6a1 1 0 011-1h12a1 1 0 011 1v4a1 1 0 01-1 1h-2M4 11v4h8v-4M4 11h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Vytisknout PDF
+                </button>
+            </div>
+        </section>
+
+        <!-- Statistics Section -->
+        <section class="statistics-section">
+            <h3>Statistiky</h3>
+            <div class="stats-grid">
+                <!-- Total Books -->
+                <div class="stat-card">
+                    <div class="stat-icon">📚</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="totalBooks">0</div>
+                        <div class="stat-label">Celkem knih</div>
+                    </div>
+                </div>
+
+                <!-- Literary Classes Progress -->
+                <div class="stat-card full-width">
+                    <h4>Literární druhy</h4>
+                    <div id="literaryClassProgress" class="progress-list">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+
+                <!-- Periods Progress -->
+                <div class="stat-card full-width">
+                    <h4>Období</h4>
+                    <div id="periodProgress" class="progress-list">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+
+                <!-- Author Counts -->
+                <div class="stat-card full-width">
+                    <h4>Autoři</h4>
+                    <div id="authorCounts" class="author-list">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Reading List Section -->
+        <section class="reading-list-section">
+            <div class="section-header">
+                <h3>Můj seznam četby</h3>
+                <div class="list-status" id="listStatus">
+                    <!-- Status indicator -->
+                </div>
+            </div>
+            
+            <div id="readingListContainer" class="reading-list">
+                <!-- Dynamically populated -->
+            </div>
+
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 8h48v48H8z" stroke="#ccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M16 20h32M16 28h32M16 36h20" stroke="#ccc" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <h4>Váš seznam je prázdný</h4>
+                <p>Začněte přidávat knihy do svého seznamu četby</p>
+                <a href="textbooks.html" class="btn btn-primary">Prohlížet knihy</a>
+            </div>
+        </section>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+        <p>Načítání...</p>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../public/js/utils.js"></script>
+    <script src="../public/js/api.js"></script>
+    <script src="../public/js/auth.js"></script>
+    <script src="../public/js/dashboard.js"></script>
+</body>
+
+</html>

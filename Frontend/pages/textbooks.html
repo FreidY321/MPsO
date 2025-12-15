@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prohlížet knihy - Povinná četba</title>
+    <link rel="stylesheet" href="../public/css/style.css">
+</head>
+
+<body class="dashboard-page">
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-brand">
+                <h1>Povinná četba</h1>
+            </div>
+            <div class="navbar-menu">
+                <a href="dashboard.html" class="nav-link">Můj seznam</a>
+                <a href="textbooks.html" class="nav-link active">Prohlížet knihy</a>
+                <button id="logoutBtn" class="btn btn-secondary">Odhlásit se</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="dashboard-container">
+        <!-- Filters Section -->
+        <section class="filters-section">
+            <h2>Prohlížet knihy</h2>
+            <div class="filters-container">
+                <div class="filter-group">
+                    <label for="literaryClassFilter">Literární druh</label>
+                    <select id="literaryClassFilter" class="filter-select">
+                        <option value="">Všechny</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="periodFilter">Období</label>
+                    <select id="periodFilter" class="filter-select">
+                        <option value="">Všechny</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="authorFilter">Autor</label>
+                    <select id="authorFilter" class="filter-select">
+                        <option value="">Všichni</option>
+                    </select>
+                </div>
+                
+                <div class="filter-actions">
+                    <button id="clearFiltersBtn" class="btn btn-secondary">Vymazat filtry</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Books List Section -->
+        <section class="books-section">
+            <div class="section-header">
+                <h3>Dostupné knihy</h3>
+                <div class="books-count">
+                    <span id="booksCount">0</span> knih
+                </div>
+            </div>
+            
+            <div id="booksContainer" class="books-grid">
+                <!-- Dynamically populated -->
+            </div>
+
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 8h48v48H8z" stroke="#ccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M16 20h32M16 28h32M16 36h20" stroke="#ccc" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <h4>Žádné knihy nenalezeny</h4>
+                <p>Zkuste změnit filtry nebo vymazat všechny filtry</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+        <p>Načítání...</p>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../public/js/utils.js"></script>
+    <script src="../public/js/api.js"></script>
+    <script src="../public/js/auth.js"></script>
+    <script src="../public/js/textbooks.js"></script>
+</body>
+
+</html>

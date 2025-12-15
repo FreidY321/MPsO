@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Utilities</title>
+    <link rel="stylesheet" href="public/css/style.css">
+</head>
+<body>
+    <div style="padding: 20px; max-width: 800px; margin: 0 auto;">
+        <h1>Test Frontend Utilities</h1>
+        
+        <section style="margin: 20px 0; padding: 20px; background: white; border-radius: 8px;">
+            <h2>Notification Tests</h2>
+            <button onclick="utils.notification.success('Úspěšná operace!')">Success</button>
+            <button onclick="utils.notification.error('Chyba při zpracování!')">Error</button>
+            <button onclick="utils.notification.warning('Varování!')">Warning</button>
+            <button onclick="utils.notification.info('Informace')">Info</button>
+        </section>
+        
+        <section style="margin: 20px 0; padding: 20px; background: white; border-radius: 8px;">
+            <h2>Validation Tests</h2>
+            <form id="testForm">
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" id="testEmail" placeholder="test@example.com">
+                </div>
+                <div class="form-group">
+                    <label>Heslo:</label>
+                    <input type="password" id="testPassword" placeholder="Minimálně 6 znaků">
+                </div>
+                <div class="form-group">
+                    <label>Jméno:</label>
+                    <input type="text" id="testName" placeholder="Jan">
+                </div>
+                <button type="button" onclick="testValidation()">Validovat</button>
+            </form>
+        </section>
+        
+        <section style="margin: 20px 0; padding: 20px; background: white; border-radius: 8px;">
+            <h2>Date Format Tests</h2>
+            <p>Dnešní datum: <span id="czechDate"></span></p>
+            <p>Datum a čas: <span id="czechDateTime"></span></p>
+            <p>Relativní čas: <span id="relativeTime"></span></p>
+        </section>
+        
+        <section style="margin: 20px 0; padding: 20px; background: white; border-radius: 8px;">
+            <h2>Storage Tests</h2>
+            <button onclick="testStorage()">Test LocalStorage</button>
+            <div id="storageResult"></div>
+        </section>
+    </div>
+
+    <script src="public/js/utils.js"></script>
+    <script src="public/js/validation.js"></script>
+    <script src="public/js/api.js"></script>
+    
+    <script>
+        // Test validation
+        function testValidation() {
+            const email = document.getElementById('testEmail');
+            const password = document.getElementById('testPassword');
+            const name = document.getElementById('testName');
+            
+            const emailValid = validation.validateField(email, validation.validateEmail);
+            const passwordValid = validation.validateField(password, validation.validatePassword);
+            const nameValid = validation.validateField(name, validation.validateName);
+            
+            if (emailValid && passwordValid && nameValid) {
+                utils.notification.success('Všechna pole jsou validní!');
+            } else {
+                utils.notification.error('Některá pole nejsou validní');
+            }
+        }
+        
+        // Test date formatting
+        document.getElementById('czechDate').textContent = utils.dateFormat.toCzechDate(new Date());
+        document.getElementById('czechDateTime').textContent = utils.dateFormat.toCzechDateTime(new Date());
+        
+        const pastDate = new Date();
+        pastDate.setHours(pastDate.getHours() - 2);
+        document.getElementById('relativeTime').textContent = utils.dateFormat.toRelativeTime(pastDate);
+        
+        // Test storage
+        function testStorage() {
+            const testData = { name: 'Test', value: 123 };
+            utils.storage.set('testKey', testData);
+            const retrieved = utils.storage.get('testKey');
+            
+            const result = document.getElementById('storageResult');
+            result.innerHTML = `<p>Uloženo: ${JSON.stringify(testData)}</p><p>Načteno: ${JSON.stringify(retrieved)}</p>`;
+            
+            if (JSON.stringify(testData) === JSON.stringify(retrieved)) {
+                utils.notification.success('LocalStorage funguje správně!');
+            }
+        }
+        
+        // Add real-time validation
+        validation.addRealtimeValidation(document.getElementById('testEmail'), validation.validateEmail);
+        validation.addRealtimeValidation(document.getElementById('testPassword'), validation.validatePassword);
+        validation.addRealtimeValidation(document.getElementById('testName'), validation.validateName);
+    </script>
+</body>
+</html>
