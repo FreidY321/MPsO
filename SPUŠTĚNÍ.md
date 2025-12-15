@@ -50,44 +50,9 @@ Pro přihlášení potřebujete účet v databázi. Pokud ještě nemáte žádn
 
 Zkuste se přihlásit s údaji, které máte v databázi v tabulce `Users`.
 
-## Řešení problémů
-
-### "Chyba připojení k serveru"
-
-**Příčina:** Backend server neběží nebo běží na jiném portu.
-
-**Řešení:**
-1. Zkontrolujte, že backend běží: `cd Backend && node server.js`
-2. Zkontrolujte, že běží na portu 3000
-3. Zkontrolujte konzoli prohlížeče (F12) pro detaily chyby
-
-### "Port already in use"
-
-**Příčina:** Port 3000 nebo 8080 je již obsazený.
-
-**Řešení:**
-1. Ukončete proces, který port používá
-2. Nebo změňte port v konfiguraci
-
-### "Cannot connect to database"
-
-**Příčina:** MariaDB neběží nebo špatné přihlašovací údaje.
-
-**Řešení:**
-1. Zkontrolujte, že MariaDB běží
-2. Zkontrolujte `Backend/.env` soubor
-3. Ověřte přihlašovací údaje k databázi
-
 ## Porty
 
 - **Frontend:** http://localhost:8080
 - **Backend API:** http://localhost:3000
 - **API dokumentace:** http://localhost:3000/api/docs
-
-## Poznámky
-
-- Frontend **musí** běžet přes HTTP server (ne jako soubory)
-- CORS je nakonfigurován pro http://localhost:8080
-- JWT tokeny se ukládají do localStorage
-- Pro vývoj používejte Chrome/Firefox s otevřenou konzolí (F12)
 
