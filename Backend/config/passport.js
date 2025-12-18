@@ -6,14 +6,16 @@ const userRepository = new UserRepository();
 
 /**
  * Configure Passport with Google OAuth 2.0 Strategy
+ * Only if credentials are provided
  */
-passport.use(
-  new GoogleStrategy(
-    {
-      clientID: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: process.env.GOOGLE_CALLBACK_URL
-    },
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  passport.use(
+    new GoogleStrategy(
+      {
+        clientID: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        callbackURL: process.env.GOOGLE_CALLBACK_URL
+      },
     async (accessToken, refreshToken, profile, done) => {
       try {
         // Extract user information from Google profile
@@ -53,8 +55,10 @@ passport.use(
         return done(error, null);
       }
     }
-  )
-);
+  ));
+} else {
+  console.log('Google OAuth credentials not found. Google authentication will be disabled.');
+}
 
 /**
  * Serialize user for session

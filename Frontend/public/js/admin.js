@@ -192,6 +192,7 @@ async function loadClasses() {
         // Load classes
         const classesResponse = await apiRequest('/classes');
         state.classes = classesResponse.data || [];
+        console.log('Loaded classes:', state.classes);
         
         // Load teachers for dropdown
         const usersResponse = await apiRequest('/users');

@@ -57,21 +57,20 @@ const createClassValidation = [
   body('name')
     .trim()
     .notEmpty()
+    .length({ min: 3, max: 4 })
     .withMessage('Class name is required'),
   body('year_ended')
     .isInt({ min: 2000, max: 2100 })
     .withMessage('Year ended must be a valid year between 2000 and 2100'),
   body('deadline')
-    .optional()
+    .optional({ nullable: true })
     .isISO8601()
+    .isAfter(new Date().toISOString().split('T')[0])
     .withMessage('Deadline must be a valid date'),
   body('cj_teacher')
     .optional({ nullable: true })
-    .custom((value) => {
-      if (value === null) return true;
-      if (Number.isInteger(value) && value >= 1) return true;
-      throw new Error('Teacher ID must be a positive integer or null');
-    })
+    .isInt({ min: 1 })
+    .withMessage('Teacher ID must be a positive integer')
 ];
 
 /**
@@ -133,16 +132,13 @@ const updateClassValidation = [
     .isInt({ min: 2000, max: 2100 })
     .withMessage('Year ended must be a valid year between 2000 and 2100'),
   body('deadline')
-    .optional()
+    .optional({ nullable: true })
     .isISO8601()
     .withMessage('Deadline must be a valid date'),
   body('cj_teacher')
     .optional({ nullable: true })
-    .custom((value) => {
-      if (value === null) return true;
-      if (Number.isInteger(value) && value >= 1) return true;
-      throw new Error('Teacher ID must be a positive integer or null');
-    })
+    .isInt({ min: 1 })
+    .withMessage('Teacher ID must be a positive integer')
 ];
 
 /**

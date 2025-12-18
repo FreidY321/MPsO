@@ -168,6 +168,52 @@ ALTER TABLE `student_book`
 --
 ALTER TABLE `Users`
   ADD CONSTRAINT `Users_ibfk_1` FOREIGN KEY (`class_id`) REFERENCES `Classes` (`id`) ON DELETE CASCADE;
+
+--
+-- Insert test data
+--
+
+-- Insert test periods
+INSERT INTO `Periods` ( `name`, `min_request`) VALUES
+('Světová a česká literatura do konce 18. stol.', 2),
+('Světová a česká literatura 19. stol.', 3),
+('Světová literatura 20. a 21. století', 4),
+('Česká literatura 20. a 21. století', 5);
+
+-- Insert test literary classes
+INSERT INTO `Literary_classes` (`name`, `min_request`) VALUES
+('Próza', 2),
+('Poezie', 2),
+('Drama', 2);
+
+-- Insert test class
+INSERT INTO `Classes` (`name`, `year_ended`, `deadline`, `cj_teacher`) VALUES
+('I4C', 2026, '2026-06-30 23:59:59', NULL);
+
+-- Insert test users with bcrypt hashed passwords (password: Test123!)
+-- Hash: $2b$10$SZVfZsOSII2R1A5/j7eSa.t1xG6tPGQRCquCTL72pv8cKlMf84p5S
+INSERT INTO `Users` (`role`, `degree`, `name`, `surname`, `email`, `class_id`, `password`) VALUES
+('admin', NULL, 'Admin', 'Testovací', 'admin@test.cz', NULL, '$2b$10$SZVfZsOSII2R1A5/j7eSa.t1xG6tPGQRCquCTL72pv8cKlMf84p5S'),
+('teacher', 'Mgr.', 'Jana', 'Nováková', 'teacher@test.cz', NULL, '$2b$10$SZVfZsOSII2R1A5/j7eSa.t1xG6tPGQRCquCTL72pv8cKlMf84p5S'),
+('student', NULL, 'Petr', 'Novák', 'student@test.cz', 1, '$2b$10$SZVfZsOSII2R1A5/j7eSa.t1xG6tPGQRCquCTL72pv8cKlMf84p5S');
+
+-- Update class with teacher
+UPDATE `Classes` SET `cj_teacher` = 2 WHERE `id` = 1;
+
+-- Insert test authors
+INSERT INTO `Authors` (`name`, `surname`) VALUES
+('William', 'Shakespeare'),
+('Émile', 'Zola'),
+('Ernest', 'Hemingway'),
+('Viktor', 'Dyk');
+
+-- Insert test books
+INSERT INTO `Books` (`name`, `author_id`, `translator_name`, `period`, `literary_class`) VALUES
+('Hamlet', 1, 'E. A. Saudek', 1, 3),
+('Zabiják', 2, 'Luděk Kárl', 2, 1),
+('Stařec a moře', 3, 'Václav Rákos', 3, 1),
+('Krysař', 4, 'Originál', 4, 1);
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

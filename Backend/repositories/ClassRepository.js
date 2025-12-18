@@ -16,11 +16,14 @@ class ClassRepository extends BaseRepository {
     const sql = `
       SELECT 
         c.*,
-        u.name as teacher_name,
-        u.surname as teacher_surname,
-        u.degree as teacher_degree
+        t.name as teacher_name,
+        t.surname as teacher_surname,
+        t.degree as teacher_degree,
+        COUNT(s.id) as student_count
       FROM ${this.tableName} c
-      LEFT JOIN Users u ON c.cj_teacher = u.id
+      LEFT JOIN Users t ON c.cj_teacher = t.id AND t.role = 'teacher'
+      LEFT JOIN Users s ON c.id = s.class_id AND s.role = 'student'
+      GROUP BY c.id
     `;
     return await this.query(sql);
   }
