@@ -29,7 +29,7 @@ const getAuthorById = asyncHandler(async (req, res) => {
   const author = await authorRepository.findById(id);
 
   if (!author) {
-    throw new AppError('Author not found', 404);
+    throw new AppError('Autor nebyl nalezen', 404);
   }
 
   res.json({
@@ -45,14 +45,14 @@ const createAuthorValidation = [
   body('name')
     .trim()
     .notEmpty()
-    .withMessage('Author name is required'),
+    .withMessage('Autorovo jméno je povinné'),
   body('second_name')
     .optional()
     .trim(),
   body('surname')
     .trim()
     .notEmpty()
-    .withMessage('Author surname is required'),
+    .withMessage('Autorovo přijmení je povinné'),
   body('second_surname')
     .optional()
     .trim()
@@ -66,7 +66,8 @@ const createAuthor = asyncHandler(async (req, res) => {
   // Check validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    throw new AppError('Validation failed', 400, errors.array());
+    const errorMessage = errors.array().map(error => error.msg).join('<br> ');
+    throw new AppError(errorMessage, 400, errors.array());
   }
 
   const { name, second_name, surname, second_surname } = req.body;
@@ -86,7 +87,7 @@ const createAuthor = asyncHandler(async (req, res) => {
 
   res.status(201).json({
     success: true,
-    message: 'Author created successfully',
+    message: 'Autor byl úspěšně vytvořen',
     data: newAuthor
   });
 });
@@ -97,12 +98,12 @@ const createAuthor = asyncHandler(async (req, res) => {
 const updateAuthorValidation = [
   param('id')
     .isInt({ min: 1 })
-    .withMessage('Author ID must be a positive integer'),
+    .withMessage('Autorovo ID musí být přirozené číslo.'),
   body('name')
     .optional()
     .trim()
     .notEmpty()
-    .withMessage('Author name cannot be empty'),
+    .withMessage('Autorovo jméno je povinné.'),
   body('second_name')
     .optional()
     .trim(),
@@ -110,7 +111,7 @@ const updateAuthorValidation = [
     .optional()
     .trim()
     .notEmpty()
-    .withMessage('Author surname cannot be empty'),
+    .withMessage('Autorovo přijmení je povinné.'),
   body('second_surname')
     .optional()
     .trim()
@@ -124,7 +125,8 @@ const updateAuthor = asyncHandler(async (req, res) => {
   // Check validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    throw new AppError('Validation failed', 400, errors.array());
+    const errorMessage = errors.array().map(error => error.msg).join('<br> ');
+    throw new AppError(errorMessage, 400, errors.array());
   }
 
   const { id } = req.params;
@@ -133,14 +135,14 @@ const updateAuthor = asyncHandler(async (req, res) => {
   // Check if author exists
   const existingAuthor = await authorRepository.findById(id);
   if (!existingAuthor) {
-    throw new AppError('Author not found', 404);
+    throw new AppError('Autor nebyl nalezen', 404);
   }
 
   // Update author
   const updated = await authorRepository.update(id, updateData);
 
   if (!updated) {
-    throw new AppError('Failed to update author', 500);
+    throw new AppError('Nepodařilo se upravit autora', 500);
   }
 
   // Get updated author
@@ -148,7 +150,7 @@ const updateAuthor = asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
-    message: 'Author updated successfully',
+    message: 'Autor byl úspěšně upraven',
     data: updatedAuthor
   });
 });
@@ -163,25 +165,25 @@ const deleteAuthor = asyncHandler(async (req, res) => {
   // Check if author exists
   const author = await authorRepository.findById(id);
   if (!author) {
-    throw new AppError('Author not found', 404);
+    throw new AppError('Autor nebyl nalezen', 404);
   }
 
   // Check if author has books
   const hasBooks = await authorRepository.hasBooks(id);
   if (hasBooks) {
-    throw new AppError('Cannot delete author with associated books', 400);
+    throw new AppError('Nelze vymazat autora, protože jsou v databázi jeho knihy', 400);
   }
 
   // Delete author
   const deleted = await authorRepository.delete(id);
 
   if (!deleted) {
-    throw new AppError('Failed to delete author', 500);
+    throw new AppError('Nepodařilo se vymazat autora', 500);
   }
 
   res.json({
     success: true,
-    message: 'Author deleted successfully'
+    message: 'Autor byl vymazán'
   });
 });
 

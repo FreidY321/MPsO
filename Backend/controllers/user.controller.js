@@ -36,7 +36,7 @@ const getUserById = asyncHandler(async (req, res) => {
   const user = await userRepository.findById(id);
   
   if (!user) {
-    throw new AppError('User not found', 404);
+    throw new AppError('Uživatel nebyl nalezen', 404);
   }
 
   // Remove password from response
@@ -54,27 +54,27 @@ const getUserById = asyncHandler(async (req, res) => {
 const createUserValidation = [
   body('role')
     .isIn(['student', 'teacher', 'admin'])
-    .withMessage('Role must be student, teacher, or admin'),
+    .withMessage('Role musí být student, teacher, nebo admin.'),
   body('name')
     .trim()
     .notEmpty()
-    .withMessage('Name is required'),
+    .withMessage('Jméno je povinné.'),
   body('surname')
     .trim()
     .notEmpty()
-    .withMessage('Surname is required'),
+    .withMessage('Příjmení je povinné.'),
   body('email')
     .isEmail()
-    .withMessage('Valid email is required')
+    .withMessage('Validní email je povinný.')
     .normalizeEmail(),
   body('password')
     .optional()
     .isLength({ min: 8 })
-    .withMessage('Password must be at least 8 characters long'),
+    .withMessage('Heslo musí mít minimálně 8 znaků.'),
   body('class_id')
-    .optional()
+    .optional({ nullable: true })
     .isInt({ min: 1 })
-    .withMessage('Class ID must be a positive integer')
+    .withMessage('ID třídy musí být přirozené číslo.')
 ];
 
 /**
@@ -85,7 +85,8 @@ const createUser = asyncHandler(async (req, res) => {
   // Check validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    throw new AppError('Validation failed', 400, errors.array());
+    const errorMessage = errors.array().map(error => error.msg).join('<br> ');
+    throw new AppError(errorMessage, 400, errors.array());
   }
 
   const { role, degree, name, second_name, surname, second_surname, email, class_id, password, google_id } = req.body;
@@ -93,7 +94,7 @@ const createUser = asyncHandler(async (req, res) => {
   // Check if email already exists
   const existingUser = await userRepository.findByEmail(email);
   if (existingUser) {
-    throw new AppError('Email already exists', 409);
+    throw new AppError('Uživatel s tímto emailem již existuje', 409);
   }
 
   // Hash password if provided
@@ -126,7 +127,7 @@ const createUser = asyncHandler(async (req, res) => {
 
   res.status(201).json({
     success: true,
-    message: 'User created successfully',
+    message: 'Uživatel byl vytvořen',
     data: userWithoutPassword
   });
 });
@@ -137,30 +138,30 @@ const createUser = asyncHandler(async (req, res) => {
 const updateUserValidation = [
   param('id')
     .isInt({ min: 1 })
-    .withMessage('User ID must be a positive integer'),
+    .withMessage('ID uživatele musí být přirozené číslo.'),
   body('role')
     .optional()
     .isIn(['student', 'teacher', 'admin'])
-    .withMessage('Role must be student, teacher, or admin'),
+    .withMessage('Role musí být student, teacher, nebo admin.'),
   body('name')
     .optional()
     .trim()
     .notEmpty()
-    .withMessage('Name cannot be empty'),
+    .withMessage('Jméno je povinné.'),
   body('surname')
     .optional()
     .trim()
     .notEmpty()
-    .withMessage('Surname cannot be empty'),
+    .withMessage('Přijmení je povinné.'),
   body('email')
     .optional()
     .isEmail()
-    .withMessage('Valid email is required')
+    .withMessage('Validní email je povinný.')
     .normalizeEmail(),
   body('class_id')
-    .optional()
+    .optional({ nullable: true })
     .isInt({ min: 1 })
-    .withMessage('Class ID must be a positive integer')
+    .withMessage('ID třídy musí být přirozené číslo.')
 ];
 
 /**
@@ -171,7 +172,8 @@ const updateUser = asyncHandler(async (req, res) => {
   // Check validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    throw new AppError('Validation failed', 400, errors.array());
+    const errorMessage = errors.array().map(error => error.msg).join('<br> ');
+    throw new AppError(errorMessage, 400, errors.array());
   }
 
   const { id } = req.params;
@@ -180,14 +182,14 @@ const updateUser = asyncHandler(async (req, res) => {
   // Check if user exists
   const existingUser = await userRepository.findById(id);
   if (!existingUser) {
-    throw new AppError('User not found', 404);
+    throw new AppError('Uživatel nebyl nalezen', 404);
   }
 
   // If email is being updated, check if it's already taken
   if (updateData.email && updateData.email !== existingUser.email) {
     const emailExists = await userRepository.emailExists(updateData.email, id);
     if (emailExists) {
-      throw new AppError('Email already exists', 409);
+      throw new AppError('Uživatel s tímto emailem již existuje', 409);
     }
   }
 
@@ -198,7 +200,7 @@ const updateUser = asyncHandler(async (req, res) => {
   const updated = await userRepository.update(id, updateData);
 
   if (!updated) {
-    throw new AppError('Failed to update user', 500);
+    throw new AppError('Uživatele se nepodařilo upravit', 500);
   }
 
   // Get updated user
@@ -207,7 +209,7 @@ const updateUser = asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
-    message: 'User updated successfully',
+    message: 'Uživatel byl úspěšně upraven',
     data: userWithoutPassword
   });
 });
@@ -222,19 +224,19 @@ const deleteUser = asyncHandler(async (req, res) => {
   // Check if user exists
   const user = await userRepository.findById(id);
   if (!user) {
-    throw new AppError('User not found', 404);
+    throw new AppError('Uživatel nebyl nalezen', 404);
   }
 
   // Delete user
   const deleted = await userRepository.delete(id);
 
   if (!deleted) {
-    throw new AppError('Failed to delete user', 500);
+    throw new AppError('Nepodařilo se vymazat uživatele', 500);
   }
 
   res.json({
     success: true,
-    message: 'User deleted successfully'
+    message: 'Uživatel byl vymazán'
   });
 });
 
@@ -271,7 +273,7 @@ const resetPassword = asyncHandler(async (req, res) => {
   // Check if user exists
   const user = await userRepository.findById(id);
   if (!user) {
-    throw new AppError('User not found', 404);
+    throw new AppError('Uživatel nebyl nalezen', 404);
   }
 
   const { generateRandomPassword } = require('../utils/password');
@@ -285,7 +287,7 @@ const resetPassword = asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
-    message: 'Password reset successfully',
+    message: 'Heslo byl resetováno',
     userId: id,
     newPassword: newPassword // Return plain text password for admin to give to user
   });
@@ -297,22 +299,22 @@ const resetPassword = asyncHandler(async (req, res) => {
 const bulkRegistrationValidation = [
   body('students')
     .isArray({ min: 1 })
-    .withMessage('Students array is required and must contain at least one student'),
+    .withMessage('Pole "students" je povinné a musí obsahovat alespoň jednoho studenta.'),
   body('students.*.name')
     .trim()
     .notEmpty()
-    .withMessage('Student name is required'),
+    .withMessage('Jméno studenta je povinné.'),
   body('students.*.surname')
     .trim()
     .notEmpty()
-    .withMessage('Student surname is required'),
+    .withMessage('Přijmení studenta je povinné.'),
   body('students.*.email')
     .isEmail()
-    .withMessage('Valid email is required for each student')
+    .withMessage('Validní email je povinný pro každého studenta.')
     .normalizeEmail(),
   body('class_id')
     .isInt({ min: 1 })
-    .withMessage('Class ID must be a positive integer')
+    .withMessage('ID třídy musí být přirozené číslo')
 ];
 
 /**
@@ -325,7 +327,8 @@ const bulkRegistration = asyncHandler(async (req, res) => {
   // Check validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    throw new AppError('Validation failed', 400, errors.array());
+    const errorMessage = errors.array().map(error => error.msg).join('<br> ');
+    throw new AppError(errorMessage, 400, errors.array());
   }
 
   const { students, class_id } = req.body;
@@ -343,7 +346,7 @@ const bulkRegistration = asyncHandler(async (req, res) => {
       validationErrors.push({
         index: i,
         email: student.email,
-        error: 'Duplicate email in batch'
+        error: 'Stejný email u dvou či více studentů v poli'
       });
     }
     emailSet.add(student.email);
@@ -354,14 +357,14 @@ const bulkRegistration = asyncHandler(async (req, res) => {
       validationErrors.push({
         index: i,
         email: student.email,
-        error: 'Email already exists in database'
+        error: 'Uživatel s tímto emailem již existuje'
       });
     }
   }
 
   // If there are validation errors, return them without creating any accounts
   if (validationErrors.length > 0) {
-    throw new AppError('Validation failed for some students', 400, validationErrors);
+    throw new AppError('Validace selhala pro některé studenty', 400, validationErrors);
   }
 
   // All validations passed, create all student accounts
@@ -407,7 +410,7 @@ const bulkRegistration = asyncHandler(async (req, res) => {
 
   res.status(201).json({
     success: true,
-    message: `Successfully created ${createdStudents.length} student accounts`,
+    message: `Bylo vytvořeno ${createdStudents.length} studentských účtů`,
     count: createdStudents.length,
     data: createdStudents,
     credentials: credentials

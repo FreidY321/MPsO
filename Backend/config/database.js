@@ -18,11 +18,11 @@ const pool = mysql.createPool({
 const testConnection = async () => {
   try {
     const connection = await pool.getConnection();
-    console.log('Database connected successfully');
+    console.log('Databáze byla napojena');
     connection.release();
     return true;
   } catch (error) {
-    console.error('Database connection failed:', error.message);
+    console.error('Připojení k databázi se nezdařilo:', error.message);
     return false;
   }
 };

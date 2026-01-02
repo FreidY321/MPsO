@@ -50,7 +50,7 @@ const getStudentReadingList = asyncHandler(async (req, res) => {
 const addBookValidation = [
   body('bookId')
     .isInt({ min: 1 })
-    .withMessage('Book ID must be a positive integer')
+    .withMessage('ID knihy musí být přirozené číslo.')
 ];
 
 /**
@@ -59,9 +59,10 @@ const addBookValidation = [
  */
 const addBook = asyncHandler(async (req, res) => {
   // Check validation errors
-  const errors = (req);
+  const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    throw new AppError('Validation failed', 400, errors.array());
+    const errorMessage = errors.array().map(error => error.msg).join('<br> ');
+    throw new AppError(errorMessage, 400, errors.array());
   }
 
   const studentId = req.user.id;
@@ -82,7 +83,7 @@ const addBook = asyncHandler(async (req, res) => {
 
   res.status(201).json({
     success: true,
-    message: 'Book added to reading list',
+    message: 'Kniha byla přidána do seznamu četby',
     data: result,
     status
   });
@@ -100,14 +101,14 @@ const removeBook = asyncHandler(async (req, res) => {
   const hasBook = await studentBookRepository.hasBook(studentId, bookId);
   
   if (!hasBook) {
-    throw new AppError('Book not found in your reading list', 404);
+    throw new AppError('Kniha nebyla nalezena ve tvé maturitní četbě', 404);
   }
 
   // Remove book from reading list
   const removed = await studentBookRepository.removeBook(studentId, bookId);
 
   if (!removed) {
-    throw new AppError('Failed to remove book', 500);
+    throw new AppError('Knihu se nepodařilo odstranit', 500);
   }
 
   // Get updated reading list status
@@ -115,7 +116,7 @@ const removeBook = asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
-    message: 'Book removed from reading list',
+    message: 'Kniha byla odstraněna z tvého seznamu četby',
     status
   });
 });
@@ -133,29 +134,6 @@ const getMyReadingListStatus = asyncHandler(async (req, res) => {
   res.json({
     success: true,
     data: status
-  });
-});
-
-/**
- * Finalize reading list (mark as complete)
- * POST /api/reading-lists/finalize
- */
-const finalizeReadingList = asyncHandler(async (req, res) => {
-  const studentId = req.user.id;
-
-  // Validate if reading list can be finalized
-  const validation = await readingListService.validateFinalization(studentId);
-
-  if (!validation.canFinalize) {
-    throw new AppError(validation.reason, 400, validation.status.violations);
-  }
-
-  // In a real implementation, you might want to add a 'finalized' flag to the database
-  // For now, we just return success with the status
-  res.json({
-    success: true,
-    message: 'Reading list meets all requirements and can be finalized',
-    data: validation.status
   });
 });
 
@@ -202,7 +180,6 @@ module.exports = {
   addBookValidation,
   removeBook,
   getMyReadingListStatus,
-  finalizeReadingList,
   getMyReadingListPdf,
   getStudentReadingListPdf
 };

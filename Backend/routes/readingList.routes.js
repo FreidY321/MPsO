@@ -22,7 +22,6 @@ router.get('/my/status', authorizeRole(['student']), getMyReadingListStatus);
 router.get('/my/pdf', authorizeRole(['student']), getMyReadingListPdf);
 router.post('/books', authorizeRole(['student']), addBookValidation, addBook);
 router.delete('/books/:bookId', authorizeRole(['student']), removeBook);
-router.post('/finalize', authorizeRole(['student']), finalizeReadingList);
 
 // Admin/Teacher routes - get any student's reading list
 router.get('/:studentId', authorizeRole(['admin', 'teacher']), getStudentReadingList);

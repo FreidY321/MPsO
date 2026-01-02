@@ -192,7 +192,6 @@ async function loadClasses() {
         // Load classes
         const classesResponse = await apiRequest('/classes');
         state.classes = classesResponse.data || [];
-        console.log('Loaded classes:', state.classes);
         
         // Load teachers for dropdown
         const usersResponse = await apiRequest('/users');
@@ -278,7 +277,7 @@ function showClassModal(classId = null) {
                         <label for="className">Název třídy *</label>
                         <input type="text" id="className" name="name" 
                                value="${cls ? escapeHtml(cls.name) : ''}" 
-                               placeholder="např. 4.A" required>
+                               placeholder="např. I4C" required>
                     </div>
                     <div class="form-group">
                         <label for="classYear">Rok maturity *</label>
@@ -624,7 +623,7 @@ function showUserModal(userId = null) {
                     <div class="form-group">
                         <label for="userClass">Třída</label>
                         <select id="userClass" name="class_id">
-                            <option value="">Nepřiřazen</option>
+                            <option value="null">Nepřiřazen</option>
                             ${classOptions}
                         </select>
                     </div>
@@ -635,7 +634,7 @@ function showUserModal(userId = null) {
                             <label for="userPassword">Heslo *</label>
                             <input type="password" id="userPassword" name="password" 
                                    placeholder="Minimálně 8 znaků" required>
-                            <p class="form-help">Pro žáky můžete nechat vygenerovat automaticky</p>
+                            <!--<p class="form-help">Pro žáky můžete nechat vygenerovat automaticky</p>-->
                         </div>
                     </div>
                 ` : ''}
@@ -701,7 +700,7 @@ async function saveUser(userId) {
             await apiRequest(`/users/${userId}`, 'PUT', data);
             showNotification('Uživatel byl úspěšně aktualizován', 'success');
         } else {
-            await   ('/users', 'POST', data);
+            await apiRequest('/users', 'POST', data);
             showNotification('Uživatel byl úspěšně vytvořen', 'success');
         }
         
@@ -1937,13 +1936,6 @@ function showModal(modalHtml) {
         const buttonConfig = getCurrentModalButtons().find(b => b.text === action);
         if (buttonConfig && buttonConfig.onClick) {
             btn.addEventListener('click', buttonConfig.onClick);
-        }
-    });
-    
-    // Close on overlay click
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            closeModal();
         }
     });
     

@@ -29,7 +29,7 @@ const getPeriodById = asyncHandler(async (req, res) => {
   const period = await periodRepository.findById(id);
 
   if (!period) {
-    throw new AppError('Period not found', 404);
+    throw new AppError('Období nebylo nalezeno', 404);
   }
 
   res.json({
@@ -45,16 +45,16 @@ const createPeriodValidation = [
   body('name')
     .trim()
     .notEmpty()
-    .withMessage('Period name is required'),
+    .withMessage('Název období je povinné.'),
   body('min_request')
     .isInt({ min: 0 })
-    .withMessage('Minimum request must be a non-negative integer'),
+    .withMessage('Minimální počet musí být přirozené číslo.'),
   body('max_request')
     .isInt({ min: 0 })
-    .withMessage('Maximum request must be a non-negative integer')
+    .withMessage('Maximální počet musí být přirozené číslo.')
     .custom((value, { req }) => {
       if (value < req.body.min_request) {
-        throw new Error('Maximum request must be greater than or equal to minimum request');
+        throw new Error('Maximální počet musí být vetší nebo roven minimálnímu počtu.');
       }
       return true;
     })
@@ -68,7 +68,8 @@ const createPeriod = asyncHandler(async (req, res) => {
   // Check validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    throw new AppError('Validation failed', 400, errors.array());
+    const errorMessage = errors.array().map(error => error.msg).join('<br> ');
+    throw new AppError(errorMessage, 400, errors.array());
   }
 
   const { name, min_request, max_request } = req.body;
@@ -76,7 +77,7 @@ const createPeriod = asyncHandler(async (req, res) => {
   // Check if period name already exists
   const existingPeriod = await periodRepository.findByName(name);
   if (existingPeriod) {
-    throw new AppError('Period name already exists', 409);
+    throw new AppError('Období s tímto názvem již existuje', 409);
   }
 
   // Create period data object
@@ -91,7 +92,7 @@ const createPeriod = asyncHandler(async (req, res) => {
 
   res.status(201).json({
     success: true,
-    message: 'Period created successfully',
+    message: 'Období bylo vytvořeno',
     data: newPeriod
   });
 });
@@ -102,24 +103,24 @@ const createPeriod = asyncHandler(async (req, res) => {
 const updatePeriodValidation = [
   param('id')
     .isInt({ min: 1 })
-    .withMessage('Period ID must be a positive integer'),
+    .withMessage('ID doby musí být přirozené číslo.'),
   body('name')
     .optional()
     .trim()
     .notEmpty()
-    .withMessage('Period name cannot be empty'),
+    .withMessage('Název období je povinný.'),
   body('min_request')
     .optional()
     .isInt({ min: 0 })
-    .withMessage('Minimum request must be a non-negative integer'),
+    .withMessage('Minimální počet musí být přirozené číslo nebo nula.'),
   body('max_request')
     .optional()
     .isInt({ min: 0 })
-    .withMessage('Maximum request must be a non-negative integer')
+    .withMessage('Maximální počet musí být přirozené číslo nebo nula.')
     .custom((value, { req }) => {
       const minRequest = req.body.min_request;
       if (minRequest !== undefined && value < minRequest) {
-        throw new Error('Maximum request must be greater than or equal to minimum request');
+        throw new Error('Maximální počet musí být větší nebo roven minimálnímu počtu.');
       }
       return true;
     })
@@ -133,7 +134,8 @@ const updatePeriod = asyncHandler(async (req, res) => {
   // Check validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    throw new AppError('Validation failed', 400, errors.array());
+    const errorMessage = errors.array().map(error => error.msg).join('<br> ');
+    throw new AppError(errorMessage, 400, errors.array());
   }
 
   const { id } = req.params;
@@ -142,26 +144,26 @@ const updatePeriod = asyncHandler(async (req, res) => {
   // Check if period exists
   const existingPeriod = await periodRepository.findById(id);
   if (!existingPeriod) {
-    throw new AppError('Period not found', 404);
+    throw new AppError('Období nebylo nalezeno', 404);
   }
 
   // If name is being updated, check if it's already taken
   if (updateData.name && updateData.name !== existingPeriod.name) {
     const nameExists = await periodRepository.findByName(updateData.name);
     if (nameExists) {
-      throw new AppError('Period name already exists', 409);
+      throw new AppError('Období s tímto názvem již existuje', 409);
     }
   }
 
   // Validate min/max relationship if only one is being updated
   if (updateData.max_request !== undefined && updateData.min_request === undefined) {
     if (updateData.max_request < existingPeriod.min_request) {
-      throw new AppError('Maximum request must be greater than or equal to minimum request', 400);
+      throw new AppError('Maximální počet musí být větší nebo roven minimálnímu počtu.', 400);
     }
   }
   if (updateData.min_request !== undefined && updateData.max_request === undefined) {
     if (updateData.min_request > existingPeriod.max_request) {
-      throw new AppError('Minimum request must be less than or equal to maximum request', 400);
+      throw new AppError('Minimální počet musí být menší nebo roven maximálnímu počtu.', 400);
     }
   }
 
@@ -169,7 +171,7 @@ const updatePeriod = asyncHandler(async (req, res) => {
   const updated = await periodRepository.update(id, updateData);
 
   if (!updated) {
-    throw new AppError('Failed to update period', 500);
+    throw new AppError('Období se nepodařilo upravit', 500);
   }
 
   // Get updated period
@@ -177,7 +179,7 @@ const updatePeriod = asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
-    message: 'Period updated successfully',
+    message: 'Období bylo upraveno',
     data: updatedPeriod
   });
 });
@@ -192,25 +194,25 @@ const deletePeriod = asyncHandler(async (req, res) => {
   // Check if period exists
   const period = await periodRepository.findById(id);
   if (!period) {
-    throw new AppError('Period not found', 404);
+    throw new AppError('Období nebylo nalezeno', 404);
   }
 
   // Check if period has books
   const hasBooks = await periodRepository.hasBooks(id);
   if (hasBooks) {
-    throw new AppError('Cannot delete period with associated books', 400);
+    throw new AppError('Nelze vymazat období s přiřazenými knihami', 400);
   }
 
   // Delete period
   const deleted = await periodRepository.delete(id);
 
   if (!deleted) {
-    throw new AppError('Failed to delete period', 500);
+    throw new AppError('Období se nepodařilo vymazat', 500);
   }
 
   res.json({
     success: true,
-    message: 'Period deleted successfully'
+    message: 'Období bylo vymazáno'
   });
 });
 

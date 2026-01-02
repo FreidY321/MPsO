@@ -29,7 +29,7 @@ const getClassById = asyncHandler(async (req, res) => {
   const classData = await classRepository.findById(id);
 
   if (!classData) {
-    throw new AppError('Class not found', 404);
+    throw new AppError('Třída nenalezena', 404);
   }
 
   // Get students in this class
@@ -57,20 +57,26 @@ const createClassValidation = [
   body('name')
     .trim()
     .notEmpty()
-    .length({ min: 3, max: 4 })
-    .withMessage('Class name is required'),
+    .withMessage('Jméno třídy je povinné.')
+    .isLength({ min: 3, max: 3 })
+    .withMessage('Jméno třídy musí mít 3 znaky.')
+    .matches(/^[IE][1-4][A-D]$/)
+    .withMessage('Jméno třídy nesmí obsahovat nic kromě číslic a písmen.'),
   body('year_ended')
+    .notEmpty()
+    .withMessage('Rok ukončení je povinný.')
     .isInt({ min: 2000, max: 2100 })
-    .withMessage('Year ended must be a valid year between 2000 and 2100'),
+    .withMessage('Rok ukončení musí být mezi rokem 2000 a 2100.'),
   body('deadline')
     .optional({ nullable: true })
     .isISO8601()
+    .withMessage('Deadline musí být datum ve formátu (YYYY-MM-DD).')
     .isAfter(new Date().toISOString().split('T')[0])
-    .withMessage('Deadline must be a valid date'),
+    .withMessage('Deadline musí být v budoucnosti.'),
   body('cj_teacher')
     .optional({ nullable: true })
     .isInt({ min: 1 })
-    .withMessage('Teacher ID must be a positive integer')
+    .withMessage('ID učitele musí být přirozené číslo.')
 ];
 
 /**
@@ -81,7 +87,8 @@ const createClass = asyncHandler(async (req, res) => {
   // Check validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    throw new AppError('Validation failed', 400, errors.array());
+    const errorMessage = errors.array().map(error => error.msg).join('<br> ');
+    throw new AppError(errorMessage, 400, errors.array());
   }
 
   const { name, year_ended, deadline, cj_teacher } = req.body;
@@ -89,7 +96,7 @@ const createClass = asyncHandler(async (req, res) => {
   // Check if class name already exists
   const existingClass = await classRepository.findByName(name);
   if (existingClass) {
-    throw new AppError('Class name already exists', 409);
+    throw new AppError('Takový název třídy již existuje', 409);
   }
 
   // Create class data object
@@ -110,7 +117,7 @@ const createClass = asyncHandler(async (req, res) => {
 
   res.status(201).json({
     success: true,
-    message: 'Class created successfully',
+    message: 'Třída byla úspěšně vytvořena',
     data: createdClass
   });
 });
@@ -121,24 +128,29 @@ const createClass = asyncHandler(async (req, res) => {
 const updateClassValidation = [
   param('id')
     .isInt({ min: 1 })
-    .withMessage('Class ID must be a positive integer'),
+    .withMessage('ID třídy musí být přirozené číslo.'),
   body('name')
-    .optional()
     .trim()
     .notEmpty()
-    .withMessage('Class name cannot be empty'),
+    .withMessage('Jméno třídy je povinné.')
+    .isLength({ min: 3, max: 3 })
+    .withMessage('Jméno třídy musí mít 3 znaky.')
+    .matches(/^[IE][1-4][A-D]$/)
+    .withMessage('Jméno třídy nesmí obsahovat nic kromě číslic a písmen.'),
   body('year_ended')
     .optional()
     .isInt({ min: 2000, max: 2100 })
-    .withMessage('Year ended must be a valid year between 2000 and 2100'),
+    .withMessage('Rok ukončení musí být mezi rokem 2000 a 2100.'),
   body('deadline')
     .optional({ nullable: true })
     .isISO8601()
-    .withMessage('Deadline must be a valid date'),
+    .withMessage('Deadline musí být datum ve formátu (YYYY-MM-DD).')
+    .isAfter(new Date().toISOString().split('T')[0])
+    .withMessage('Deadline musí být v budoucnosti.'),
   body('cj_teacher')
     .optional({ nullable: true })
     .isInt({ min: 1 })
-    .withMessage('Teacher ID must be a positive integer')
+    .withMessage('ID učitele musí být přirozené číslo.')
 ];
 
 /**
@@ -149,7 +161,8 @@ const updateClass = asyncHandler(async (req, res) => {
   // Check validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    throw new AppError('Validation failed', 400, errors.array());
+    const errorMessage = errors.array().map(error => error.msg).join('<br> ');
+    throw new AppError(errorMessage, 400, errors.array());
   }
 
   const { id } = req.params;
@@ -158,14 +171,14 @@ const updateClass = asyncHandler(async (req, res) => {
   // Check if class exists
   const existingClass = await classRepository.findById(id);
   if (!existingClass) {
-    throw new AppError('Class not found', 404);
+    throw new AppError('Třída nenalezena', 404);
   }
 
   // If name is being updated, check if it's already taken
   if (updateData.name && updateData.name !== existingClass.name) {
     const nameExists = await classRepository.findByName(updateData.name);
     if (nameExists) {
-      throw new AppError('Class name already exists', 409);
+      throw new AppError('Takový název třídy již existuje', 409);
     }
   }
 
@@ -173,7 +186,7 @@ const updateClass = asyncHandler(async (req, res) => {
   const updated = await classRepository.update(id, updateData);
 
   if (!updated) {
-    throw new AppError('Failed to update class', 500);
+    throw new AppError('Třídu se nepodařilo upravit', 500);
   }
 
   // Get updated class with teacher info
@@ -181,7 +194,7 @@ const updateClass = asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
-    message: 'Class updated successfully',
+    message: 'Třída byla úspěšně upravena',
     data: updatedClass
   });
 });
@@ -196,25 +209,25 @@ const deleteClass = asyncHandler(async (req, res) => {
   // Check if class exists
   const classData = await classRepository.findById(id);
   if (!classData) {
-    throw new AppError('Class not found', 404);
+    throw new AppError('Třída nebyla nelezena', 404);
   }
 
   // Check if class has students
   const students = await classRepository.getStudentsByClassId(id);
   if (students.length > 0) {
-    throw new AppError('Cannot delete class with assigned students', 400);
+    throw new AppError('Nemohu vymazat třídu, dokud v ní jsou žáci', 400);
   }
 
   // Delete class
   const deleted = await classRepository.delete(id);
 
   if (!deleted) {
-    throw new AppError('Failed to delete class', 500);
+    throw new AppError('Chyba při mazání třídy', 500);
   }
 
   res.json({
     success: true,
-    message: 'Class deleted successfully'
+    message: 'Třída byla vymazána'
   });
 });
 

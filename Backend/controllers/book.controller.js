@@ -40,7 +40,7 @@ const getBookById = asyncHandler(async (req, res) => {
   const book = await bookRepository.findById(id);
 
   if (!book) {
-    throw new AppError('Book not found', 404);
+    throw new AppError('Kniha nebyla nalezena', 404);
   }
 
   res.json({
@@ -56,25 +56,24 @@ const createBookValidation = [
   body('name')
     .trim()
     .notEmpty()
-    .withMessage('Book name is required'),
+    .withMessage('Jméno knihy je povinné.'),
   body('url_book')
     .trim()
-    .notEmpty()
-    .withMessage('Book URL is required')
+    .optional({ nullable: true })
     .isURL()
-    .withMessage('Book URL must be a valid URL'),
+    .withMessage('URL knížky musí být validní URL.'),
   body('author_id')
     .isInt({ min: 1 })
-    .withMessage('Author ID must be a positive integer'),
+    .withMessage('ID autora musí být přirozené číslo.'),
   body('translator_name')
     .optional()
     .trim(),
   body('period')
     .isInt({ min: 1 })
-    .withMessage('Period ID must be a positive integer'),
+    .withMessage('ID období musí být přirozené číslo.'),
   body('literary_class')
     .isInt({ min: 1 })
-    .withMessage('Literary class ID must be a positive integer')
+    .withMessage('ID literárního druhu musí být přirozené číslo.')
 ];
 
 /**
@@ -85,7 +84,8 @@ const createBook = asyncHandler(async (req, res) => {
   // Check validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    throw new AppError('Validation failed', 400, errors.array());
+    const errorMessage = errors.array().map(error => error.msg).join('<br> ');
+    throw new AppError(errorMessage, 400, errors.array());
   }
 
   const { name, url_book, author_id, translator_name, period, literary_class } = req.body;
@@ -112,7 +112,7 @@ const createBook = asyncHandler(async (req, res) => {
 
   res.status(201).json({
     success: true,
-    message: 'Book created successfully',
+    message: 'Kniha byla úspěšně vytvořena',
     data: createdBook
   });
 });
@@ -123,34 +123,31 @@ const createBook = asyncHandler(async (req, res) => {
 const updateBookValidation = [
   param('id')
     .isInt({ min: 1 })
-    .withMessage('Book ID must be a positive integer'),
+    .withMessage('ID knihy musí být přirozené číslo.'),
   body('name')
-    .optional()
     .trim()
     .notEmpty()
-    .withMessage('Book name cannot be empty'),
+    .withMessage('Jméno knihy je povinné.'),
   body('url_book')
-    .optional()
     .trim()
-    .notEmpty()
-    .withMessage('Book URL cannot be empty')
+    .optional({ nullable: true })
     .isURL()
-    .withMessage('Book URL must be a valid URL'),
+    .withMessage('URL knížky musí být validní URL.'),
   body('author_id')
-    .optional()
+    .optional({ nullable: true })
     .isInt({ min: 1 })
-    .withMessage('Author ID must be a positive integer'),
+    .withMessage('ID autora musí být přirozené číslo.'),
   body('translator_name')
     .optional()
     .trim(),
   body('period')
     .optional()
     .isInt({ min: 1 })
-    .withMessage('Period ID must be a positive integer'),
+    .withMessage('ID období musí být přirozené číslo.'),
   body('literary_class')
     .optional()
     .isInt({ min: 1 })
-    .withMessage('Literary class ID must be a positive integer')
+    .withMessage('ID literárního druhu musí být přirozené číslo.')
 ];
 
 /**
@@ -161,7 +158,8 @@ const updateBook = asyncHandler(async (req, res) => {
   // Check validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    throw new AppError('Validation failed', 400, errors.array());
+    const errorMessage = errors.array().map(error => error.msg).join('<br> ');
+    throw new AppError(errorMessage, 400, errors.array());
   }
 
   const { id } = req.params;
@@ -170,14 +168,14 @@ const updateBook = asyncHandler(async (req, res) => {
   // Check if book exists
   const existingBook = await bookRepository.findById(id);
   if (!existingBook) {
-    throw new AppError('Book not found', 404);
+    throw new AppError('Kniha nebyla nalezena', 404);
   }
 
   // Update book
   const updated = await bookRepository.update(id, updateData);
 
   if (!updated) {
-    throw new AppError('Failed to update book', 500);
+    throw new AppError('Nepodařilo se upravit knihu', 500);
   }
 
   // Get updated book with full details
@@ -185,7 +183,7 @@ const updateBook = asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
-    message: 'Book updated successfully',
+    message: 'Kniha byla úspěšně upravena',
     data: updatedBook
   });
 });
@@ -200,25 +198,25 @@ const deleteBook = asyncHandler(async (req, res) => {
   // Check if book exists
   const book = await bookRepository.findById(id);
   if (!book) {
-    throw new AppError('Book not found', 404);
+    throw new AppError('Kniha nebyla nalezena', 404);
   }
 
   // Check if book is used in any reading lists
   const isUsed = await bookRepository.isUsedInReadingLists(id);
   if (isUsed) {
-    throw new AppError('Cannot delete book that is in use in reading lists', 400);
+    throw new AppError('Nemohu vymazat knihu, která se již nachází u někoho v četbě', 400);
   }
 
   // Delete book
   const deleted = await bookRepository.delete(id);
 
   if (!deleted) {
-    throw new AppError('Failed to delete book', 500);
+    throw new AppError('Nepodařilo se vymazat knihu', 500);
   }
 
   res.json({
     success: true,
-    message: 'Book deleted successfully'
+    message: 'Kniha byla vymazána'
   });
 });
 

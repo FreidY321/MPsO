@@ -29,7 +29,7 @@ const getLiteraryClassById = asyncHandler(async (req, res) => {
   const literaryClass = await literaryClassRepository.findById(id);
 
   if (!literaryClass) {
-    throw new AppError('Literary class not found', 404);
+    throw new AppError('Literární druh se nepodařilo najít', 404);
   }
 
   res.json({
@@ -45,16 +45,16 @@ const createLiteraryClassValidation = [
   body('name')
     .trim()
     .notEmpty()
-    .withMessage('Literary class name is required'),
+    .withMessage('Název literárního druhu je povinný.'),
   body('min_request')
     .isInt({ min: 0 })
-    .withMessage('Minimum request must be a non-negative integer'),
+    .withMessage('Minimální počet knih musí být přirozené číslo nebo nula.'),
   body('max_request')
     .isInt({ min: 0 })
-    .withMessage('Maximum request must be a non-negative integer')
+    .withMessage('Maximální počet knih musí být přirozené číslo nebo nula.')
     .custom((value, { req }) => {
       if (value < req.body.min_request) {
-        throw new Error('Maximum request must be greater than or equal to minimum request');
+        throw new Error('Maximální počet knih se musí rovnat nebo být větší než minimální počet knih.');
       }
       return true;
     })
@@ -68,7 +68,8 @@ const createLiteraryClass = asyncHandler(async (req, res) => {
   // Check validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    throw new AppError('Validation failed', 400, errors.array());
+    const errorMessage = errors.array().map(error => error.msg).join('<br> ');
+    throw new AppError(errorMessage, 400, errors.array());
   }
 
   const { name, min_request, max_request } = req.body;
@@ -76,7 +77,7 @@ const createLiteraryClass = asyncHandler(async (req, res) => {
   // Check if literary class name already exists
   const existingLiteraryClass = await literaryClassRepository.findByName(name);
   if (existingLiteraryClass) {
-    throw new AppError('Literary class name already exists', 409);
+    throw new AppError('Literární druh s tímto jménem již existuje', 409);
   }
 
   // Create literary class data object
@@ -91,7 +92,7 @@ const createLiteraryClass = asyncHandler(async (req, res) => {
 
   res.status(201).json({
     success: true,
-    message: 'Literary class created successfully',
+    message: 'Literární druh byl vytvořen',
     data: newLiteraryClass
   });
 });
@@ -102,24 +103,24 @@ const createLiteraryClass = asyncHandler(async (req, res) => {
 const updateLiteraryClassValidation = [
   param('id')
     .isInt({ min: 1 })
-    .withMessage('Literary class ID must be a positive integer'),
+    .withMessage('ID literárního druhu musí být přirozené číslo.'),
   body('name')
     .optional()
     .trim()
     .notEmpty()
-    .withMessage('Literary class name cannot be empty'),
+    .withMessage('Název literárního druhu je povinný.'),
   body('min_request')
     .optional()
     .isInt({ min: 0 })
-    .withMessage('Minimum request must be a non-negative integer'),
+    .withMessage('Minimální počet knih musí být přirozené číslo nebo nula.'),
   body('max_request')
     .optional()
     .isInt({ min: 0 })
-    .withMessage('Maximum request must be a non-negative integer')
+    .withMessage('Maximální počet knih musí být přirozené číslo nebo nula.')
     .custom((value, { req }) => {
       const minRequest = req.body.min_request;
       if (minRequest !== undefined && value < minRequest) {
-        throw new Error('Maximum request must be greater than or equal to minimum request');
+        throw new Error('Maximální počet knih se musí rovnat nebo být větší než minimální počet knih.');
       }
       return true;
     })
@@ -133,7 +134,8 @@ const updateLiteraryClass = asyncHandler(async (req, res) => {
   // Check validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    throw new AppError('Validation failed', 400, errors.array());
+    const errorMessage = errors.array().map(error => error.msg).join('<br> ');
+    throw new AppError(errorMessage, 400, errors.array());
   }
 
   const { id } = req.params;
@@ -142,26 +144,26 @@ const updateLiteraryClass = asyncHandler(async (req, res) => {
   // Check if literary class exists
   const existingLiteraryClass = await literaryClassRepository.findById(id);
   if (!existingLiteraryClass) {
-    throw new AppError('Literary class not found', 404);
+    throw new AppError('Literární druh nebyl nalezen', 404);
   }
 
   // If name is being updated, check if it's already taken
   if (updateData.name && updateData.name !== existingLiteraryClass.name) {
     const nameExists = await literaryClassRepository.findByName(updateData.name);
     if (nameExists) {
-      throw new AppError('Literary class name already exists', 409);
+      throw new AppError('Literární druh s tímto jménem již existuje', 409);
     }
   }
 
   // Validate min/max relationship if only one is being updated
   if (updateData.max_request !== undefined && updateData.min_request === undefined) {
     if (updateData.max_request < existingLiteraryClass.min_request) {
-      throw new AppError('Maximum request must be greater than or equal to minimum request', 400);
+      throw new AppError('Maximální počet knih se musí rovnat nebo být větší než minimální počet knih', 400);
     }
   }
   if (updateData.min_request !== undefined && updateData.max_request === undefined) {
     if (updateData.min_request > existingLiteraryClass.max_request) {
-      throw new AppError('Minimum request must be less than or equal to maximum request', 400);
+      throw new AppError('Minimální počet knih se musí rovnat nebo být menší než maximální počet knih', 400);
     }
   }
 
@@ -169,7 +171,7 @@ const updateLiteraryClass = asyncHandler(async (req, res) => {
   const updated = await literaryClassRepository.update(id, updateData);
 
   if (!updated) {
-    throw new AppError('Failed to update literary class', 500);
+    throw new AppError('Literární druh se nepodařilo upravit', 500);
   }
 
   // Get updated literary class
@@ -177,7 +179,7 @@ const updateLiteraryClass = asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
-    message: 'Literary class updated successfully',
+    message: 'Literární druh byl upraven',
     data: updatedLiteraryClass
   });
 });
@@ -192,25 +194,25 @@ const deleteLiteraryClass = asyncHandler(async (req, res) => {
   // Check if literary class exists
   const literaryClass = await literaryClassRepository.findById(id);
   if (!literaryClass) {
-    throw new AppError('Literary class not found', 404);
+    throw new AppError('Literární druh nebyl nalezen', 404);
   }
 
   // Check if literary class has books
   const hasBooks = await literaryClassRepository.hasBooks(id);
   if (hasBooks) {
-    throw new AppError('Cannot delete literary class with associated books', 400);
+    throw new AppError('Literární druh nelze smazet, jsou k němu přiřezeny knihy', 400);
   }
 
   // Delete literary class
   const deleted = await literaryClassRepository.delete(id);
 
   if (!deleted) {
-    throw new AppError('Failed to delete literary class', 500);
+    throw new AppError('Literární druh se nepodařilo smazat', 500);
   }
 
   res.json({
     success: true,
-    message: 'Literary class deleted successfully'
+    message: 'Literární druh byl vymazán'
   });
 });
 

@@ -14,11 +14,11 @@ const userRepository = new UserRepository();
 const loginValidation = [
   body('email')
     .isEmail()
-    .withMessage('Valid email is required')
+    .withMessage('Je potřeba zadat validní emailovou adresu.')
     .normalizeEmail(),
   body('password')
     .notEmpty()
-    .withMessage('Password is required')
+    .withMessage('Heslo je povinné.')
 ];
 
 /**
@@ -29,7 +29,8 @@ const login = asyncHandler(async (req, res, next) => {
   // Check validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    throw new AppError('Validation failed', 400, errors.array());
+    const errorMessage = errors.array().map(error => error.msg).join('<br> ');
+    throw new AppError(errorMessage, 400, errors.array());
   }
 
   const { email, password } = req.body;
@@ -38,19 +39,19 @@ const login = asyncHandler(async (req, res, next) => {
   const user = await userRepository.findByEmail(email);
   
   if (!user) {
-    throw new AppError('Invalid email or password', 401);
+    throw new AppError('Neplatné heslo nebo email', 401);
   }
 
   // Check if user has a password (might be Google OAuth only)
   if (!user.password) {
-    throw new AppError('This account uses Google sign-in. Please use Google OAuth to login.', 401);
+    throw new AppError('Tento účet používá Google login, prosím použij ho', 401);
   }
 
   // Compare password
   const isPasswordValid = await comparePassword(password, user.password);
   
   if (!isPasswordValid) {
-    throw new AppError('Invalid email or password', 401);
+    throw new AppError('Neplatné heslo nebo email', 401);
   }
 
   // If user is a student with a class, fetch class name
@@ -79,7 +80,7 @@ const login = asyncHandler(async (req, res, next) => {
 
   res.json({
     success: true,
-    message: 'Login successful',
+    message: 'Přihlášení proběhlo úspěšně',
     token,
     user: userWithoutPassword
   });
@@ -96,7 +97,7 @@ const logout = asyncHandler(async (req, res) => {
   // We just return a success message
   res.json({
     success: true,
-    message: 'Logout successful. Please remove the token from client storage.'
+    message: 'Odhlášení proběhlo úspěšně. Please remove the token from client storage.'
   });
 });
 
@@ -106,12 +107,12 @@ const logout = asyncHandler(async (req, res) => {
 const changePasswordValidation = [
   body('oldPassword')
     .notEmpty()
-    .withMessage('Current password is required'),
+    .withMessage('Momentální heslo je povinné'),
   body('newPassword')
-    .isLength({ min: 8 })
-    .withMessage('New password must be at least 8 characters long')
     .notEmpty()
-    .withMessage('New password is required')
+    .withMessage('Nové heslo je povinné')
+    .isLength({ min: 8 })
+    .withMessage('Nové heslo musí mít minimálně 8 znaků')
 ];
 
 /**
@@ -123,7 +124,8 @@ const changePassword = asyncHandler(async (req, res) => {
   // Check validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    throw new AppError('Validation failed', 400, errors.array());
+    const errorMessage = errors.array().map(error => error.msg).join('<br> ');
+    throw new AppError(errorMessage, 400, errors.array());
   }
 
   const { oldPassword, newPassword } = req.body;
@@ -133,12 +135,12 @@ const changePassword = asyncHandler(async (req, res) => {
   const user = await userRepository.findById(userId);
   
   if (!user) {
-    throw new AppError('User not found', 404);
+    throw new AppError('Uživatel nebyl nalezen', 404);
   }
 
   // Check if user has a password (might be Google OAuth only)
   if (!user.password) {
-    throw new AppError('This account uses Google sign-in and does not have a password.', 400);
+    throw new AppError('Tento uživatel používá Google přihlášení, nemá zde uložené heslo', 400);
   }
 
   // Verify old password
@@ -146,7 +148,7 @@ const changePassword = asyncHandler(async (req, res) => {
   const isOldPasswordValid = await comparePwd(oldPassword, user.password);
   
   if (!isOldPasswordValid) {
-    throw new AppError('Current password is incorrect', 401);
+    throw new AppError('Momentální heslo je špatně', 401);
   }
 
   // Hash new password
@@ -157,7 +159,7 @@ const changePassword = asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
-    message: 'Password changed successfully'
+    message: 'Heslo bylo úspěšně změněno'
   });
 });
 
