@@ -72,7 +72,7 @@ const startServer = async () => {
 
     // Start listening
     app.listen(PORT, () => {
-      console.log(`✓ Server beží na potru ${PORT}`);
+      console.log(`✓ Server beží na portu ${PORT}`);
       console.log(`✓ Prostředí: ${process.env.NODE_ENV}`);
       console.log(`✓ API je dostupné na http://localhost:${PORT}/api`);
     });
