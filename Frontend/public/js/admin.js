@@ -568,6 +568,7 @@ function renderUsersTable() {
 
 function showUserModal(userId = null) {
     const user = userId ? state.users.find(u => u.id === userId) : null;
+    console.log(user);
     const isEdit = !!user;
     
     const classOptions = state.classes.map(c => 
@@ -583,7 +584,7 @@ function showUserModal(userId = null) {
                 <div class="form-row">
                     <div class="form-group">
                         <label for="userRole">Role *</label>
-                        <select id="userRole" name="role" required ${isEdit ? 'disabled' : ''}>
+                        <select id="userRole" name="role" required ${isEdit ? 'readonly style="pointer-events: none; background-color: #f5f5f5;"' : ''}>
                             <option value="student" ${user && user.role === 'student' ? 'selected' : ''}>Žák</option>
                             <option value="teacher" ${user && user.role === 'teacher' ? 'selected' : ''}>Učitel</option>
                             <option value="admin" ${user && user.role === 'admin' ? 'selected' : ''}>Administrátor</option>
@@ -670,13 +671,15 @@ async function saveUser(userId) {
     const formData = new FormData(form);
     
     const data = {
-        role: formData.get('role'),
+        role: isEdit ? user.role : formData.get('role'),
         degree: formData.get('degree') || null,
         name: formData.get('name'),
         surname: formData.get('surname'),
         email: formData.get('email'),
         class_id: formData.get('class_id') ? parseInt(formData.get('class_id')) : null
     };
+
+    console.log(data)
     
     if (!userId) {
         data.password = formData.get('password');
