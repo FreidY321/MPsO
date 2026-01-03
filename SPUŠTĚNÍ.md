@@ -13,10 +13,10 @@ node server.js
 
 Měli byste vidět:
 ```
-Database connected successfully
-✓ Server running on port 3000
-✓ Environment: development
-✓ API available at http://localhost:3000/api
+Databáze byla napojena
+✓ Server beží na potru 3000
+✓ Prostředí: Vývoj
+✓ API je dostupné na http://localhost:3000/api
 ```
 
 ### 2. Spusťte Frontend server

@@ -16,7 +16,7 @@ npm install
 ```
 
 2. Nakonfigurujte databázi:
-   - Vytvořte databázi pomocí SQL souboru v `../Frontend/testTest-2.sql`
+   - Vytvořte databázi pomocí SQL souboru v `./testTest-2.sql`
    - Zkopírujte `.env.example` na `.env`
    - Upravte `.env` s vašimi databázovými přihlašovacími údaji
 

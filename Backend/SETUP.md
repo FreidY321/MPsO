@@ -36,7 +36,7 @@ This will install all required dependencies:
 1. Make sure MariaDB is running
 2. Create the database using the SQL file:
    ```bash
-   mysql -u root -p < ../Frontend/testTest-2.sql
+   mysql -u root -p < ../Backend/testTest-2.sql
    ```
 3. Update the `.env` file with your database credentials:
    - DB_HOST (default: localhost)
