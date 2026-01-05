@@ -27,6 +27,39 @@ const getAllUsers = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Get current user (authenticated user's own profile)
+ * GET /api/users/me
+ */
+const getCurrentUser = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  
+  const user = await userRepository.findById(userId);
+  
+  if (!user) {
+    throw new AppError('Uživatel nebyl nalezen', 404);
+  }
+
+  // If user is a student with a class, fetch class name
+  let userData = { ...user };
+  if (user.role === 'student' && user.class_id) {
+    const ClassRepository = require('../repositories/ClassRepository');
+    const classRepository = new ClassRepository();
+    const classData = await classRepository.findById(user.class_id);
+    if (classData) {
+      userData.class_name = classData.name;
+    }
+  }
+
+  // Remove password from response
+  const { password, ...userWithoutPassword } = userData;
+
+  res.json({
+    success: true,
+    user: userWithoutPassword
+  });
+});
+
+/**
  * Get user by ID
  * GET /api/users/:id
  */
@@ -418,6 +451,7 @@ const bulkRegistration = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  getCurrentUser,
   getAllUsers,
   getUserById,
   createUser,

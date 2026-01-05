@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const {
+  getCurrentUser,
   getAllUsers,
   getUserById,
   createUser,
@@ -21,6 +22,13 @@ const { authenticateToken, authorizeRole } = require('../middleware/auth');
  * @access  Private (admin only)
  */
 router.get('/', authenticateToken, authorizeRole('admin'), getAllUsers);
+
+/**
+ * @route   GET /api/users/me
+ * @desc    Get current authenticated user's profile
+ * @access  Private (any authenticated user)
+ */
+router.get('/me', authenticateToken, getCurrentUser);
 
 /**
  * @route   GET /api/users/class/:classId
