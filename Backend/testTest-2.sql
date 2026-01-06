@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS `Authors` (
 CREATE TABLE IF NOT EXISTS `Books` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(32) NOT NULL,
-  `url_book` varchar(128) NOT NULL,
+  `url_book` varchar(128) NULL,
   `author_id` int(11) NOT NULL,
   `translator_name` varchar(64) NOT NULL,
   `period` int(11) NOT NULL,
@@ -83,8 +83,8 @@ CREATE TABLE IF NOT EXISTS `Classes` (
 CREATE TABLE IF NOT EXISTS `Literary_classes` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(32) NOT NULL,
-  `min_request` int(11) NOT NULL,
-  `max_request` int(11) NOT NULL,
+  `min_request` int(11) NULL,
+  `max_request` int(11) NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf16 COLLATE=utf16_czech_ci;
 
@@ -97,8 +97,8 @@ CREATE TABLE IF NOT EXISTS `Literary_classes` (
 CREATE TABLE IF NOT EXISTS `Periods` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(64) NOT NULL,
-  `min_request` int(11) NOT NULL,
-  `max_request` int(11) NOT NULL,
+  `min_request` int(11) NULL,
+  `max_request` int(11) NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf16 COLLATE=utf16_czech_ci;
 
@@ -154,7 +154,7 @@ ALTER TABLE `Books`
 -- Constraints for table `Classes`
 --
 ALTER TABLE `Classes`
-  ADD CONSTRAINT `Classes_ibfk_1` FOREIGN KEY (`cj_teacher`) REFERENCES `Users` (`id`) ON DELETE CASCADE;
+  ADD CONSTRAINT `Classes_ibfk_1` FOREIGN KEY (`cj_teacher`) REFERENCES `Users` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `student_book`
