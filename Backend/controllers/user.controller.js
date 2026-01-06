@@ -99,7 +99,7 @@ const createUserValidation = [
   body('email')
     .isEmail()
     .withMessage('Validní email je povinný.')
-    .normalizeEmail(),
+    .normalizeEmail({ gmail_remove_dots: false }),
   body('password')
     .optional()
     .isLength({ min: 8 })
@@ -190,7 +190,7 @@ const updateUserValidation = [
     .optional()
     .isEmail()
     .withMessage('Validní email je povinný.')
-    .normalizeEmail(),
+    .normalizeEmail({ gmail_remove_dots: false }),
   body('class_id')
     .optional({ nullable: true })
     .isInt({ min: 1 })
@@ -344,7 +344,7 @@ const bulkRegistrationValidation = [
   body('students.*.email')
     .isEmail()
     .withMessage('Validní email je povinný pro každého studenta.')
-    .normalizeEmail(),
+    .normalizeEmail({ gmail_remove_dots: false }),
   body('class_id')
     .isInt({ min: 1 })
     .withMessage('ID třídy musí být přirozené číslo')

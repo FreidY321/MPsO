@@ -15,7 +15,7 @@ const loginValidation = [
   body('email')
     .isEmail()
     .withMessage('Je potřeba zadat validní emailovou adresu.')
-    .normalizeEmail(),
+    .normalizeEmail({ gmail_remove_dots: false }),
   body('password')
     .notEmpty()
     .withMessage('Heslo je povinné.')
