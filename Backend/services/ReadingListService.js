@@ -26,7 +26,7 @@ class ReadingListService {
     if (!book) {
       return {
         canAdd: false,
-        reason: 'Book not found'
+        reason: 'Kniha nebyla nalezena'
       };
     }
 
@@ -35,7 +35,7 @@ class ReadingListService {
     if (hasBook) {
       return {
         canAdd: false,
-        reason: 'Book is already in your reading list'
+        reason: 'Tato kniha je už ve tvém seznamu četby'
       };
     }
 
@@ -45,13 +45,22 @@ class ReadingListService {
     if (authorBookCount >= 2) {
       return {
         canAdd: false,
-        reason: `You already have ${authorBookCount} books by this author. Maximum is 2 books per author.`
+        reason: `Už máš ${authorBookCount} Knih od ${book.author_name}. Maximum jsou 2 knihy od jednoho autora.`
+      };
+    }
+
+    // Check count of the books
+    const books = await this.studentBookRepository.findByStudentId(studentId);
+    if(books.length >= 20){
+      return {
+        canAdd: false,
+        reason: 'Už máš 20 knih v seznamu četby'
       };
     }
 
     return {
       canAdd: true,
-      reason: 'Book can be added'
+      reason: 'Kniha může být přidána'
     };
   }
 
@@ -131,19 +140,43 @@ class ReadingListService {
     
     literaryClassProgress.forEach(lc => {
       if (!lc.isSatisfied) {
-        violations.push(`${lc.name}: needs ${lc.minRequired - lc.currentCount} more book(s) (minimum ${lc.minRequired})`);
+        if((lc.minRequired - lc.currentCount) === 1){
+          violations.push(`${lc.name}: musí mít o ${lc.minRequired - lc.currentCount} knihu více (minimum je ${lc.minRequired})`);
+        }else if((lc.minRequired - lc.currentCount) < 5){
+          violations.push(`${lc.name}: musí mít o ${lc.minRequired - lc.currentCount} knihy více (minimum je ${lc.minRequired})`);
+        }else{
+          violations.push(`${lc.name}: musí mít o ${lc.minRequired - lc.currentCount} knih více (minimum je ${lc.minRequired})`);
+        }
       }
       if (lc.isOverLimit) {
-        violations.push(`${lc.name}: exceeds maximum by ${lc.currentCount - lc.maxAllowed} book(s) (maximum ${lc.maxAllowed})`);
+        if((lc.maxAllowed - lc.currentCount) === 1){
+          violations.push(`${lc.name}: přesahuje maximum o ${lc.currentCount - lc.maxAllowed} knihu (maximum je ${lc.maxAllowed})`);
+        }else if((lc.maxAllowed - lc.currentCount) < 5){
+          violations.push(`${lc.name}: přesahuje maximum o ${lc.currentCount - lc.maxAllowed} knihy (maximum je ${lc.maxAllowed})`);
+        }else{
+          violations.push(`${lc.name}: přesahuje maximum o ${lc.currentCount - lc.maxAllowed} knih (maximum je ${lc.maxAllowed})`);
+        }
       }
     });
     
     periodProgress.forEach(p => {
       if (!p.isSatisfied) {
-        violations.push(`${p.name}: needs ${p.minRequired - p.currentCount} more book(s) (minimum ${p.minRequired})`);
+        if((p.minRequired - p.currentCount) === 1){
+          violations.push(`${p.name}: musí mít o ${p.minRequired - p.currentCount} knihu více (minimum je ${p.minRequired})`);
+        }else if((p.minRequired - p.currentCount) < 5){
+          violations.push(`${p.name}: musí mít o ${p.minRequired - p.currentCount} knihy více (minimum je ${p.minRequired})`);
+        }else{
+          violations.push(`${p.name}: musí mít o ${p.minRequired - p.currentCount} knih více (minimum je ${p.minRequired})`);
+        }
       }
       if (p.isOverLimit) {
-        violations.push(`${p.name}: exceeds maximum by ${p.currentCount - p.maxAllowed} book(s) (maximum ${p.maxAllowed})`);
+        if((p.maxAllowed - p.currentCount) === 1){
+          violations.push(`${p.name}: přesahuje maximum o ${p.currentCount - p.maxAllowed} knihu (maximum je ${p.maxAllowed})`);
+        }else if((p.maxAllowed - p.currentCount) < 5){
+          violations.push(`${p.name}: přesahuje maximum o ${p.currentCount - p.maxAllowed} knihy (maximum je ${p.maxAllowed})`);
+        }else{
+          violations.push(`${p.name}: přesahuje maximum o ${p.currentCount - p.maxAllowed} knih (maximum je ${p.maxAllowed})`);
+        }
       }
     });
 
@@ -169,14 +202,14 @@ class ReadingListService {
     if (status.isComplete) {
       return {
         canFinalize: true,
-        reason: 'Reading list meets all requirements',
+        reason: 'Maturitní četba splňuje všechny požadavky',
         status
       };
     }
 
     return {
       canFinalize: false,
-      reason: 'Reading list does not meet all requirements',
+      reason: 'Maturitní četba nesplňuje všechny požadavky',
       status
     };
   }
