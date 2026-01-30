@@ -26,7 +26,7 @@ class BookRepository extends BaseRepository {
       INNER JOIN Authors a ON b.author_id = a.id
       INNER JOIN Periods p ON b.period = p.id
       INNER JOIN Literary_classes lc ON b.literary_class = lc.id
-      ORDER BY lc.name, p.name, b.name
+      ORDER BY p.name, lc.name, b.name
     `;
     return await this.query(sql);
   }
