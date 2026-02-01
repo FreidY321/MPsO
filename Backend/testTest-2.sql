@@ -31,7 +31,7 @@ USE `MaturitniCetba`;
 
 CREATE TABLE IF NOT EXISTS `Authors` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(32) NOT NULL,
+  `name` varchar(32) NULL,
   `second_name` varchar(32) DEFAULT NULL,
   `surname` varchar(32) NOT NULL,
   `second_surname` varchar(32) DEFAULT NULL,
