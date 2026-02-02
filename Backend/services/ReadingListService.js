@@ -133,10 +133,13 @@ class ReadingListService {
     // Check if all requirements are satisfied
     const allLiteraryClassesSatisfied = literaryClassProgress.every(lc => lc.isSatisfied && !lc.isOverLimit);
     const allPeriodsSatisfied = periodProgress.every(p => p.isSatisfied && !p.isOverLimit);
-    const isComplete = allLiteraryClassesSatisfied && allPeriodsSatisfied;
-
+    const isComplete = allLiteraryClassesSatisfied && allPeriodsSatisfied && totalBooks == 20;
     // Collect violations
     const violations = [];
+
+    if(totalBooks != 20){
+      violations.push(`V povinné četbě je potřeba mít přesně 20 knih`);
+    }
     
     literaryClassProgress.forEach(lc => {
       if (!lc.isSatisfied) {
