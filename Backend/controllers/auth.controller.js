@@ -92,9 +92,6 @@ const login = asyncHandler(async (req, res, next) => {
  * Note: JWT tokens are stateless, so logout is handled client-side by removing the token
  */
 const logout = asyncHandler(async (req, res) => {
-  // In a stateless JWT system, logout is handled client-side
-  // The client should remove the token from storage
-  // We just return a success message
   res.json({
     success: true,
     message: 'Odhlášení proběhlo úspěšně. Please remove the token from client storage.'
@@ -166,29 +163,28 @@ const changePassword = asyncHandler(async (req, res) => {
 /**
  * Google OAuth initiation
  * GET /api/auth/google
- * Redirects to Google OAuth consent screen
+ * Redirects to Google OAuth consent screen with account selection prompt
  */
 const googleAuth = passport.authenticate('google', {
   scope: ['profile', 'email'],
-  session: false
+  session: false,
+  prompt: 'select_account'
 });
 
 /**
  * Google OAuth callback
  * GET /api/auth/google/callback
  * Handles the callback from Google OAuth
+ * Supports both web and mobile applications
  */
 const googleAuthCallback = (req, res, next) => {
-  passport.authenticate('google', { session: false }, (err, user, info) => {
+  passport.authenticate('google', { session: false }, (err, user) => {
     if (err) {
-      // Redirect to login page with error
-      const errorMessage = encodeURIComponent(err.message || 'Google authentication failed');
-      return res.redirect(`${process.env.CORS_ORIGIN}/pages/login.html?error=${errorMessage}`);
+      return handleAuthError(req, res, err.message || 'Google autentizace selhala');
     }
 
     if (!user) {
-      const errorMessage = encodeURIComponent('Authentication failed. Please try again.');
-      return res.redirect(`${process.env.CORS_ORIGIN}/pages/login.html?error=${errorMessage}`);
+      return handleAuthError(req, res, 'Autentizace selhala. Prosím, zkus to znovu.');
     }
 
     try {
@@ -202,14 +198,92 @@ const googleAuthCallback = (req, res, next) => {
 
       const token = generateToken(tokenPayload);
 
-      // Redirect to frontend with token
-      // The frontend will extract the token from URL and store it
-      res.redirect(`${process.env.CORS_ORIGIN}/pages/login.html?token=${token}`);
+      // Handle successful authentication
+      return handleAuthSuccess(req, res, token, user);
     } catch (error) {
-      const errorMessage = encodeURIComponent('Failed to generate authentication token');
-      return res.redirect(`${process.env.CORS_ORIGIN}/pages/login.html?error=${errorMessage}`);
+      return handleAuthError(req, res, 'Nepodařilo se vygenerovat autentizační token');
     }
   })(req, res, next);
+};
+
+/**
+ * Handles successful OAuth authentication
+ * Determines redirect based on client type (web/mobile)
+ */
+const handleAuthSuccess = (req, res, token, user) => {
+  const { state } = req.query;
+  const isMobileRequest = detectMobileRequest(req, state);
+
+  if (isMobileRequest) {
+    // For mobile apps, use custom scheme redirect
+    const mobileScheme = process.env.MOBILE_APP_SCHEME || 'myapp';
+    return res.redirect(`${mobileScheme}://auth/callback?token=${token}&success=true`);
+  }
+
+  // For web applications, redirect to login page with token
+  const webOrigin = process.env.CORS_ORIGIN;
+  return res.redirect(`${webOrigin}/pages/login.html?token=${token}`);
+};
+
+/**
+ * Handles OAuth authentication errors
+ * Determines redirect based on client type (web/mobile)
+ */
+const handleAuthError = (req, res, errorMessage) => {
+  const { state } = req.query;
+  const isMobileRequest = detectMobileRequest(req, state);
+  const encodedError = encodeURIComponent(errorMessage);
+
+  if (isMobileRequest) {
+    // For mobile apps, use custom scheme redirect with error
+    const mobileScheme = process.env.MOBILE_APP_SCHEME || 'myapp';
+    return res.redirect(`${mobileScheme}://auth/callback?error=${encodedError}&success=false`);
+  }
+
+  // For web applications, redirect to login page with error
+  const webOrigin = process.env.CORS_ORIGIN;
+  return res.redirect(`${webOrigin}/pages/login.html?error=${encodedError}`);
+};
+
+/**
+ * Detects if the request comes from a mobile application
+ * Uses multiple detection methods for reliability
+ */
+const detectMobileRequest = (req, state) => {
+  // Method 1: Check state parameter for mobile indicator
+  if (state && state.includes('mobile')) {
+    return true;
+  }
+
+  // Method 2: Check User-Agent for mobile patterns
+  const userAgent = req.get('User-Agent') || '';
+  const mobilePatterns = [
+    /Mobile/i,
+    /Android/i,
+    /iPhone/i,
+    /iPad/i,
+    /iPod/i,
+    /BlackBerry/i,
+    /Windows Phone/i
+  ];
+
+  if (mobilePatterns.some(pattern => pattern.test(userAgent))) {
+    return true;
+  }
+
+  // Method 3: Check custom header set by mobile app
+  const clientType = req.get('X-Client-Type');
+  if (clientType === 'mobile') {
+    return true;
+  }
+
+  // Method 4: Check referer for mobile app indicators
+  const referer = req.get('Referer') || '';
+  if (referer.includes('mobile') || referer.includes('app')) {
+    return true;
+  }
+
+  return false;
 };
 
 module.exports = {
@@ -219,5 +293,8 @@ module.exports = {
   changePassword,
   changePasswordValidation,
   googleAuth,
-  googleAuthCallback
+  googleAuthCallback,
+  handleAuthSuccess,
+  handleAuthError,
+  detectMobileRequest
 };

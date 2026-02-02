@@ -85,9 +85,9 @@ Změna hesla přihlášeného uživatele.
 ```
 
 #### GET /api/auth/google
-Zahájení Google OAuth flow. Přesměruje na Google přihlašovací stránku.
+Zahájení Google OAuth flow. Přesměruje na Google přihlašovací stránku s výzvou k výběru účtu.
 
-**Note:** Tento endpoint se volá přesměrováním prohlížeče, ne pomocí fetch/axios.
+**Note:** Tento endpoint se volá přesměrováním prohlížeče, ne pomocí fetch/axios. Uživatel bude vždy vyzván k výběru Google účtu, i když je již přihlášen.
 
 **Usage:**
 ```javascript
@@ -764,6 +764,3 @@ Aktuálně není implementován rate limiting. V produkčním prostředí doporu
 
 API podporuje CORS pro všechny originy v development módu. V produkci nastavte `CORS_ORIGIN` v `.env` souboru.
 
-## Kontakt
-
-Pro podporu a dotazy kontaktujte: support@example.com

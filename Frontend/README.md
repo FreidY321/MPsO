@@ -76,7 +76,7 @@ Backend API běží na http://localhost:3000/api
 ### Funkce
 
 - **Email/heslo přihlášení** - Plně funkční autentizace přes API
-- **Google OAuth** - Připraveno pro budoucí implementaci (tlačítko je zatím neaktivní)
+- **Google OAuth** - Plně funkční s výzvou k výběru účtu
 - **Automatické přesměrování** - Po úspěšném přihlášení podle role:
   - Admin → `admin.html`
   - Teacher → `admin.html`
