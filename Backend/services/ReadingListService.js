@@ -45,7 +45,7 @@ class ReadingListService {
     if (authorBookCount >= 2) {
       return {
         canAdd: false,
-        reason: `Už máš ${authorBookCount} Knih od ${book.author_name}. Maximum jsou 2 knihy od jednoho autora.`
+        reason: `Už máš ${authorBookCount} knihy od tohoto autora. Maximum jsou 2 knihy od stejného autora. Nelze tudíž přidat další.`
       };
     }
 
