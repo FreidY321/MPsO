@@ -1,4 +1,5 @@
 const { pool } = require('../config/database');
+const BookRepository = require('./BookRepository');
 
 /**
  * StudentBookRepository handles all database operations for student_book table
@@ -74,6 +75,8 @@ class StudentBookRepository {
       throw new Error('Kniha už je v tvém seznamu četby');
     }
 
+    const bookRepository = new BookRepository();
+    const book = await bookRepository.findById(bookId);
     const authorBookCount = await this.getAuthorBookCount(studentId, book.author_id);
     if (authorBookCount >= 2) {
       throw new Error('Už máš 2 knihy od tohoto autora');
