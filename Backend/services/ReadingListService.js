@@ -83,7 +83,7 @@ class ReadingListService {
     const literaryClassProgress = categoryCounts.literaryClasses.map(lc => {
       const currentCount = parseInt(lc.current_count) || 0;
       const minRequired = parseInt(lc.min_request) || 0;
-      const maxAllowed = parseInt(lc.max_request) || 0;
+      const maxAllowed = parseInt(lc.max_request) || 20;
       
       return {
         id: lc.id,
@@ -100,7 +100,7 @@ class ReadingListService {
     const periodProgress = categoryCounts.periods.map(p => {
       const currentCount = parseInt(p.current_count) || 0;
       const minRequired = parseInt(p.min_request) || 0;
-      const maxAllowed = parseInt(p.max_request) || 0;
+      const maxAllowed = parseInt(p.max_request) || 20;
       
       return {
         id: p.id,
