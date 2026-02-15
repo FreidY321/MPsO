@@ -69,21 +69,23 @@ For production, update `GOOGLE_CALLBACK_URL` to your production domain.
 ### User Flow
 
 1. User clicks "Přihlásit se přes Google" button on login page
-2. User is redirected to Google OAuth consent screen
-3. User grants permission to the application
-4. Google redirects back to `/api/auth/google/callback` with authorization code
-5. Backend exchanges code for user profile information
-6. Backend checks if user exists in database:
+2. User is redirected to Google OAuth consent screen with account selection prompt
+3. User selects which Google account to use (even if already logged in)
+4. User grants permission to the application
+5. Google redirects back to `/api/auth/google/callback` with authorization code
+6. Backend exchanges code for user profile information
+7. Backend checks if user exists in database:
    - If user exists with `google_id`: Login successful
    - If user exists with matching email but no `google_id`: Update user with `google_id` and login
    - If user doesn't exist: Show error (users must be pre-registered by admin)
-7. Backend generates JWT token and redirects to frontend with token
-8. Frontend stores token and redirects to appropriate dashboard
+8. Backend generates JWT token and redirects to frontend with token
+9. Frontend stores token and redirects to appropriate dashboard
 
 ### Security Notes
 
 - Users must be pre-registered by admin before they can use Google OAuth
 - The system links Google accounts to existing user accounts via email
+- Account selection prompt is enabled to allow users to choose between multiple Google accounts
 - JWT tokens are used for session management (stateless)
 - OAuth is only used for authentication, not authorization
 

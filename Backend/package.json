@@ -43,5 +43,8 @@
     "nodemon": "^3.1.7",
     "pdf-parse": "^2.4.5",
     "supertest": "^7.1.4"
+  },
+  "overrides": {
+  "tar": "^7.4.3"
   }
 }

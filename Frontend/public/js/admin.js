@@ -568,7 +568,6 @@ function renderUsersTable() {
 
 function showUserModal(userId = null) {
     const user = userId ? state.users.find(u => u.id === userId) : null;
-    console.log(user);
     const isEdit = !!user;
     
     const classOptions = state.classes.map(c => 
@@ -671,7 +670,7 @@ async function saveUser(userId) {
     const formData = new FormData(form);
     
     const data = {
-        role: isEdit ? user.role : formData.get('role'),
+        role: formData.get('role') ? formData.get('role') : user.role,
         degree: formData.get('degree') || null,
         name: formData.get('name'),
         surname: formData.get('surname'),

@@ -214,11 +214,8 @@ async function fetchUserData(token) {
   try {
     setLoading(true);
     
-    // Decode JWT to get user info (simple base64 decode)
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    
     // Fetch full user data from API
-    const response = await fetch(`${API_BASE_URL}/users/${payload.id}`, {
+    const response = await fetch(`${API_BASE_URL}/users/me`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
