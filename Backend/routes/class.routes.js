@@ -34,10 +34,10 @@ router.post('/', authenticateToken, authorizeRole('admin'), createClassValidatio
 
 /**
  * @route   PUT /api/classes/:id
- * @desc    Update class
- * @access  Private (admin only)
+ * @desc    Update class (admin can update all fields, teacher can only update deadline for classes where they teach)
+ * @access  Private (admin, teacher only)
  */
-router.put('/:id', authenticateToken, authorizeRole('admin'), updateClassValidation, updateClass);
+router.put('/:id', authenticateToken, authorizeRole(['admin', 'teacher']), updateClassValidation, updateClass);
 
 /**
  * @route   DELETE /api/classes/:id

@@ -28,22 +28,22 @@ router.get('/:id', authenticateToken, getPeriodById);
 /**
  * @route   POST /api/periods
  * @desc    Create a new period
- * @access  Private (admin only)
+ * @access  Private (admin, teacher only)
  */
-router.post('/', authenticateToken, authorizeRole('admin'), createPeriodValidation, createPeriod);
+router.post('/', authenticateToken, authorizeRole(['admin', 'teacher']), createPeriodValidation, createPeriod);
 
 /**
  * @route   PUT /api/periods/:id
  * @desc    Update period
- * @access  Private (admin only)
+ * @access  Private (admin, teacher only)
  */
-router.put('/:id', authenticateToken, authorizeRole('admin'), updatePeriodValidation, updatePeriod);
+router.put('/:id', authenticateToken, authorizeRole(['admin', 'teacher']), updatePeriodValidation, updatePeriod);
 
 /**
  * @route   DELETE /api/periods/:id
  * @desc    Delete period
- * @access  Private (admin only)
+ * @access  Private (admin, teacher only)
  */
-router.delete('/:id', authenticateToken, authorizeRole('admin'), deletePeriod);
+router.delete('/:id', authenticateToken, authorizeRole(['admin', 'teacher']), deletePeriod);
 
 module.exports = router;

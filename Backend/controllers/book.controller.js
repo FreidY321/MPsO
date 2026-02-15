@@ -59,7 +59,7 @@ const createBookValidation = [
     .withMessage('Jméno knihy je povinné.'),
   body('url_book')
     .trim()
-    .optional({ nullable: true })
+    .optional({values: 'null'})
     .isURL()
     .withMessage('URL knížky musí být validní URL.'),
   body('author_id')
@@ -77,7 +77,7 @@ const createBookValidation = [
 ];
 
 /**
- * Create a new book (admin only)
+ * Create a new book (admin, teachers only)
  * POST /api/books
  */
 const createBook = asyncHandler(async (req, res) => {
@@ -93,7 +93,6 @@ const createBook = asyncHandler(async (req, res) => {
   // Create book data object
   const bookData = {
     name,
-    url_book,
     author_id,
     period,
     literary_class
@@ -103,6 +102,10 @@ const createBook = asyncHandler(async (req, res) => {
   if (translator_name) {
     bookData.translator_name = translator_name;
   }
+  
+  if(url_book){
+    bookData.url_book = url_book;
+  } 
 
   // Create book
   const newBook = await bookRepository.create(bookData);
@@ -125,16 +128,17 @@ const updateBookValidation = [
     .isInt({ min: 1 })
     .withMessage('ID knihy musí být přirozené číslo.'),
   body('name')
+    .optional({values: 'null'})
     .trim()
     .notEmpty()
     .withMessage('Jméno knihy je povinné.'),
   body('url_book')
     .trim()
-    .optional({ nullable: true })
+    .optional({values: 'null'})
     .isURL()
     .withMessage('URL knížky musí být validní URL.'),
   body('author_id')
-    .optional({ nullable: true })
+    .optional({values: 'null'})
     .isInt({ min: 1 })
     .withMessage('ID autora musí být přirozené číslo.'),
   body('translator_name')
@@ -151,7 +155,7 @@ const updateBookValidation = [
 ];
 
 /**
- * Update book (admin only)
+ * Update book (admin, teachers only)
  * PUT /api/books/:id
  */
 const updateBook = asyncHandler(async (req, res) => {
@@ -189,7 +193,7 @@ const updateBook = asyncHandler(async (req, res) => {
 });
 
 /**
- * Delete book (admin only)
+ * Delete book (admin, teachers only)
  * DELETE /api/books/:id
  */
 const deleteBook = asyncHandler(async (req, res) => {

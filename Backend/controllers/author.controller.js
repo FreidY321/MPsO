@@ -43,23 +43,24 @@ const getAuthorById = asyncHandler(async (req, res) => {
  */
 const createAuthorValidation = [
   body('name')
+    .optional({values: 'null'})
     .trim()
     .notEmpty()
-    .withMessage('Autorovo jméno je povinné'),
+    .withMessage('Pokud už zadáváme autorovo jméno, nesmí být prázdné'),
   body('second_name')
-    .optional()
+    .optional({values: 'null'})
     .trim(),
   body('surname')
     .trim()
     .notEmpty()
     .withMessage('Autorovo přijmení je povinné'),
   body('second_surname')
-    .optional()
+    .optional({values: 'null'})
     .trim()
 ];
 
 /**
- * Create a new author (admin only)
+ * Create a new author (admin, teachers only)
  * POST /api/authors
  */
 const createAuthor = asyncHandler(async (req, res) => {
@@ -100,12 +101,12 @@ const updateAuthorValidation = [
     .isInt({ min: 1 })
     .withMessage('Autorovo ID musí být přirozené číslo.'),
   body('name')
-    .optional()
+    .optional({values: 'null'})
     .trim()
     .notEmpty()
-    .withMessage('Autorovo jméno je povinné.'),
+    .withMessage('Pokud už zadáváme autorovo jméno, nesmí být prázdné'),
   body('second_name')
-    .optional()
+    .optional({values: 'null'})
     .trim(),
   body('surname')
     .optional()
@@ -113,12 +114,12 @@ const updateAuthorValidation = [
     .notEmpty()
     .withMessage('Autorovo přijmení je povinné.'),
   body('second_surname')
-    .optional()
+    .optional({values: 'null'})
     .trim()
 ];
 
 /**
- * Update author (admin only)
+ * Update author (admin, teachers only)
  * PUT /api/authors/:id
  */
 const updateAuthor = asyncHandler(async (req, res) => {
@@ -156,7 +157,7 @@ const updateAuthor = asyncHandler(async (req, res) => {
 });
 
 /**
- * Delete author (admin only)
+ * Delete author (admin, teachers only)
  * DELETE /api/authors/:id
  */
 const deleteAuthor = asyncHandler(async (req, res) => {

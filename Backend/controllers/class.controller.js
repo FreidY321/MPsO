@@ -68,13 +68,13 @@ const createClassValidation = [
     .isInt({ min: 2000, max: 2100 })
     .withMessage('Rok ukončení musí být mezi rokem 2000 a 2100.'),
   body('deadline')
-    .optional({ nullable: true })
+    .optional({values: 'null'})
     .isISO8601()
     .withMessage('Deadline musí být datum ve formátu (YYYY-MM-DD).')
     .isAfter(new Date().toISOString().split('T')[0])
     .withMessage('Deadline musí být v budoucnosti.'),
   body('cj_teacher')
-    .optional({ nullable: true })
+    .optional({values: 'null'})
     .isInt({ min: 1 })
     .withMessage('ID učitele musí být přirozené číslo.')
 ];
@@ -130,6 +130,7 @@ const updateClassValidation = [
     .isInt({ min: 1 })
     .withMessage('ID třídy musí být přirozené číslo.'),
   body('name')
+    .optional({values: 'null'})
     .trim()
     .notEmpty()
     .withMessage('Jméno třídy je povinné.')
@@ -138,23 +139,23 @@ const updateClassValidation = [
     .matches(/^[IE][1-4][A-D]$/)
     .withMessage('Jméno třídy nesmí obsahovat nic kromě číslic a písmen.'),
   body('year_ended')
-    .optional()
+    .optional({values: 'null'})
     .isInt({ min: 2000, max: 2100 })
     .withMessage('Rok ukončení musí být mezi rokem 2000 a 2100.'),
   body('deadline')
-    .optional({ nullable: true })
+    .optional({values: 'null'})
     .isISO8601()
     .withMessage('Deadline musí být datum ve formátu (YYYY-MM-DD).')
     .isAfter(new Date().toISOString().split('T')[0])
     .withMessage('Deadline musí být v budoucnosti.'),
   body('cj_teacher')
-    .optional({ nullable: true })
+    .optional({values: 'null'})
     .isInt({ min: 1 })
     .withMessage('ID učitele musí být přirozené číslo.')
 ];
 
 /**
- * Update class (admin only)
+ * Update class (admin, teachers only)
  * PUT /api/classes/:id
  */
 const updateClass = asyncHandler(async (req, res) => {
@@ -172,6 +173,17 @@ const updateClass = asyncHandler(async (req, res) => {
   const existingClass = await classRepository.findById(id);
   if (!existingClass) {
     throw new AppError('Třída nenalezena', 404);
+  }
+
+  // If user is a teacher, only allow updating deadline for their own class
+  if (req.user.role === 'teacher') {
+    if (existingClass.cj_teacher !== req.user.id) {
+      throw new AppError('Můžeš upravovat pouze své vlastní třídy', 403);
+    }
+    // Teachers can only update deadline
+    if (Object.keys(updateData).some(key => key !== 'deadline')) {
+      throw new AppError('Učitelé mohou měnit pouze deadline', 403);
+    }
   }
 
   // If name is being updated, check if it's already taken

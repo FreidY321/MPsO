@@ -28,22 +28,22 @@ router.get('/:id', authenticateToken, getBookById);
 /**
  * @route   POST /api/books
  * @desc    Create a new book
- * @access  Private (admin only)
+ * @access  Private (admin, teacher)
  */
-router.post('/', authenticateToken, authorizeRole('admin'), createBookValidation, createBook);
+router.post('/', authenticateToken, authorizeRole(['admin', 'teacher']), createBookValidation, createBook);
 
 /**
  * @route   PUT /api/books/:id
  * @desc    Update book
- * @access  Private (admin only)
+ * @access  Private (admin, teacher)
  */
-router.put('/:id', authenticateToken, authorizeRole('admin'), updateBookValidation, updateBook);
+router.put('/:id', authenticateToken, authorizeRole(['admin', 'teacher']), updateBookValidation, updateBook);
 
 /**
  * @route   DELETE /api/books/:id
  * @desc    Delete book
- * @access  Private (admin only)
+ * @access  Private (admin, teacher)
  */
-router.delete('/:id', authenticateToken, authorizeRole('admin'), deleteBook);
+router.delete('/:id', authenticateToken, authorizeRole(['admin', 'teacher']), deleteBook);
 
 module.exports = router;

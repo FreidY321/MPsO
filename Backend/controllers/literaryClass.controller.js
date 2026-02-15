@@ -50,6 +50,7 @@ const createLiteraryClassValidation = [
     .isInt({ min: 0 })
     .withMessage('Minimální počet knih musí být přirozené číslo nebo nula.'),
   body('max_request')
+    .optional({values: 'null'})
     .isInt({ min: 0 })
     .withMessage('Maximální počet knih musí být přirozené číslo nebo nula.')
     .custom((value, { req }) => {
@@ -61,7 +62,7 @@ const createLiteraryClassValidation = [
 ];
 
 /**
- * Create a new literary class (admin only)
+ * Create a new literary class (admin, teachers only)
  * POST /api/literary-classes
  */
 const createLiteraryClass = asyncHandler(async (req, res) => {
@@ -110,11 +111,11 @@ const updateLiteraryClassValidation = [
     .notEmpty()
     .withMessage('Název literárního druhu je povinný.'),
   body('min_request')
-    .optional()
+    .optional({values: 'null'})
     .isInt({ min: 0 })
     .withMessage('Minimální počet knih musí být přirozené číslo nebo nula.'),
   body('max_request')
-    .optional()
+    .optional({values: 'null'})
     .isInt({ min: 0 })
     .withMessage('Maximální počet knih musí být přirozené číslo nebo nula.')
     .custom((value, { req }) => {
@@ -127,7 +128,7 @@ const updateLiteraryClassValidation = [
 ];
 
 /**
- * Update literary class (admin only)
+ * Update literary class (admin, teachers only)
  * PUT /api/literary-classes/:id
  */
 const updateLiteraryClass = asyncHandler(async (req, res) => {
@@ -156,12 +157,12 @@ const updateLiteraryClass = asyncHandler(async (req, res) => {
   }
 
   // Validate min/max relationship if only one is being updated
-  if (updateData.max_request !== undefined && updateData.min_request === undefined) {
+  if (updateData.max_request !== undefined && updateData.max_request !== null && updateData.min_request === undefined) {
     if (updateData.max_request < existingLiteraryClass.min_request) {
       throw new AppError('Maximální počet knih se musí rovnat nebo být větší než minimální počet knih', 400);
     }
   }
-  if (updateData.min_request !== undefined && updateData.max_request === undefined) {
+  if (updateData.min_request !== undefined && updateData.min_request !== null && updateData.max_request === undefined) {
     if (updateData.min_request > existingLiteraryClass.max_request) {
       throw new AppError('Minimální počet knih se musí rovnat nebo být menší než maximální počet knih', 400);
     }
@@ -185,7 +186,7 @@ const updateLiteraryClass = asyncHandler(async (req, res) => {
 });
 
 /**
- * Delete literary class (admin only)
+ * Delete literary class (admin, teachers only)
  * DELETE /api/literary-classes/:id
  */
 const deleteLiteraryClass = asyncHandler(async (req, res) => {

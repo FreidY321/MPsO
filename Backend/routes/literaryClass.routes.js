@@ -28,22 +28,22 @@ router.get('/:id', authenticateToken, getLiteraryClassById);
 /**
  * @route   POST /api/literary-classes
  * @desc    Create a new literary class
- * @access  Private (admin only)
+ * @access  Private (admin, teacher only)
  */
-router.post('/', authenticateToken, authorizeRole('admin'), createLiteraryClassValidation, createLiteraryClass);
+router.post('/', authenticateToken, authorizeRole(['admin', 'teacher']), createLiteraryClassValidation, createLiteraryClass);
 
 /**
  * @route   PUT /api/literary-classes/:id
  * @desc    Update literary class
- * @access  Private (admin only)
+ * @access  Private (admin, teacher only)
  */
-router.put('/:id', authenticateToken, authorizeRole('admin'), updateLiteraryClassValidation, updateLiteraryClass);
+router.put('/:id', authenticateToken, authorizeRole(['admin', 'teacher']), updateLiteraryClassValidation, updateLiteraryClass);
 
 /**
  * @route   DELETE /api/literary-classes/:id
  * @desc    Delete literary class
- * @access  Private (admin only)
+ * @access  Private (admin, teacher only)
  */
-router.delete('/:id', authenticateToken, authorizeRole('admin'), deleteLiteraryClass);
+router.delete('/:id', authenticateToken, authorizeRole(['admin', 'teacher']), deleteLiteraryClass);
 
 module.exports = router;

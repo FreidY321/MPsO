@@ -61,7 +61,7 @@ const createPeriodValidation = [
 ];
 
 /**
- * Create a new period (admin only)
+ * Create a new period (admin, teachers only)
  * POST /api/periods
  */
 const createPeriod = asyncHandler(async (req, res) => {
@@ -127,7 +127,7 @@ const updatePeriodValidation = [
 ];
 
 /**
- * Update period (admin only)
+ * Update period (admin, teachers only)
  * PUT /api/periods/:id
  */
 const updatePeriod = asyncHandler(async (req, res) => {
@@ -156,12 +156,12 @@ const updatePeriod = asyncHandler(async (req, res) => {
   }
 
   // Validate min/max relationship if only one is being updated
-  if (updateData.max_request !== undefined && updateData.min_request === undefined) {
+  if (updateData.max_request !== undefined && updateData.max_request !== null && updateData.min_request === undefined) {
     if (updateData.max_request < existingPeriod.min_request) {
       throw new AppError('Maximální počet musí být větší nebo roven minimálnímu počtu.', 400);
     }
   }
-  if (updateData.min_request !== undefined && updateData.max_request === undefined) {
+  if (updateData.min_request !== undefined && updateData.min_request !== null && updateData.max_request === undefined) {
     if (updateData.min_request > existingPeriod.max_request) {
       throw new AppError('Minimální počet musí být menší nebo roven maximálnímu počtu.', 400);
     }
@@ -185,7 +185,7 @@ const updatePeriod = asyncHandler(async (req, res) => {
 });
 
 /**
- * Delete period (admin only)
+ * Delete period (admin, teachers only)
  * DELETE /api/periods/:id
  */
 const deletePeriod = asyncHandler(async (req, res) => {

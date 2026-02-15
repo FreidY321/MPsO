@@ -1,11 +1,15 @@
 const { body, param, validationResult } = require('express-validator');
 const StudentBookRepository = require('../repositories/StudentBookRepository');
+const UserRepository = require('../repositories/UserRepository');
+const ClassRepository = require('../repositories/ClassRepository');
 const ReadingListService = require('../services/ReadingListService');
 const PdfService = require('../services/PdfService');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 
 const studentBookRepository = new StudentBookRepository();
+const userRepository = new UserRepository();
+const classRepository = new ClassRepository();
 const readingListService = new ReadingListService();
 const pdfService = new PdfService();
 
@@ -27,11 +31,30 @@ const getMyReadingList = asyncHandler(async (req, res) => {
 });
 
 /**
- * Get reading list for a specific student (admin/teacher only)
+ * Get reading list for a specific student (admin, teachers only)
  * GET /api/reading-lists/:studentId
  */
 const getStudentReadingList = asyncHandler(async (req, res) => {
   const { studentId } = req.params;
+
+  if (req.user.role === 'teacher') {
+
+    const student = await userRepository.findById(studentId);
+    
+    if (!student) {
+      throw new AppError('Žák nebyl nalezen', 404);
+    }
+    
+    if (!student.class_id) {
+      throw new AppError('Nemáte přístup k maturitnímu listu tohoto žáka', 403);
+    }
+    
+    const studentsClass = await classRepository.findById(student.class_id);
+    
+    if (!studentsClass || studentsClass.cj_teacher !== req.user.id) {
+      throw new AppError('Nemáte přístup k maturitnímu listu tohoto žáka', 403);
+    }
+  }
 
   // Get student's reading list with full book details
   const books = await studentBookRepository.findByStudentId(studentId);
@@ -156,11 +179,30 @@ const getMyReadingListPdf = asyncHandler(async (req, res) => {
 });
 
 /**
- * Generate PDF for a specific student's reading list (admin/teacher only)
+ * Generate PDF for a specific student's reading list (admin, teachers only)
  * GET /api/reading-lists/:studentId/pdf
  */
 const getStudentReadingListPdf = asyncHandler(async (req, res) => {
   const { studentId } = req.params;
+
+  if (req.user.role === 'teacher') {
+
+    const student = await userRepository.findById(studentId);
+    
+    if (!student) {
+      throw new AppError('Žák nebyl nalezen', 404);
+    }
+    
+    if (!student.class_id) {
+      throw new AppError('Nemáte přístup k maturitnímu listu tohoto žáka', 403);
+    }
+    
+    const studentsClass = await classRepository.findById(student.class_id);
+    
+    if (!studentsClass || studentsClass.cj_teacher !== req.user.id) {
+      throw new AppError('Nemáte přístup k maturitnímu listu tohoto žáka', 403);
+    }
+  }
 
   // Generate PDF
   const pdfDoc = await pdfService.generateReadingListPdf(parseInt(studentId));
