@@ -6,6 +6,10 @@ const {
   addBook,
   addBookValidation,
   removeBook,
+  addBooks,
+  addBooksValidation,
+  removeBooks,
+  removeBooksValidation,
   getMyReadingListStatus,
   finalizeReadingList,
   getMyReadingListPdf,
@@ -21,6 +25,8 @@ router.get('/my', authorizeRole(['student']), getMyReadingList);
 router.get('/my/status', authorizeRole(['student']), getMyReadingListStatus);
 router.get('/my/pdf', authorizeRole(['student']), getMyReadingListPdf);
 router.post('/books', authorizeRole(['student']), addBookValidation, addBook);
+router.post('/books/batch', authorizeRole(['student']), addBooksValidation, addBooks);
+router.delete('/books', authorizeRole(['student']), removeBooks);
 router.delete('/books/:bookId', authorizeRole(['student']), removeBook);
 
 // Admin/Teacher routes (admin get any student's reading list, teacher access only the lists of the students that they teach)

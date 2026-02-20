@@ -145,6 +145,129 @@ const removeBook = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Add books validation rules
+ */
+const addBooksValidation = [
+  body('bookIds')
+    .isArray({ min: 1 })
+    .withMessage('Musíš zadat alespoň jedno ID knihy.'),
+  body('bookIds.*')
+    .isInt({ min: 1 })
+    .withMessage('Všechna ID knih musí být přirozená čísla.')
+];
+
+/**
+ * Add multiple books to reading list
+ * POST /api/reading-lists/books/batch
+ */
+const addBooks = asyncHandler(async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    const errorMessage = errors.array().map(error => error.msg).join('<br> ');
+    throw new AppError(errorMessage, 400, errors.array());
+  }
+
+  const studentId = req.user.id;
+  const { bookIds } = req.body;
+
+  const result = {
+    added: [],
+    errors: []
+  };
+
+  for (const bookId of bookIds) {
+    try {
+      // Validate if book can be added (author limit check)
+      const validation = await readingListService.validateBookAddition(studentId, bookId);
+      
+      if (!validation.canAdd) {
+        result.errors.push({
+          bookId,
+          reason: validation.reason
+        });
+        continue;
+      }
+
+      // Add book to reading list
+      const added = await studentBookRepository.addBook(studentId, bookId);
+      result.added.push(added);
+    } catch (error) {
+      result.errors.push({
+        bookId,
+        reason: error.message
+      });
+    }
+  }
+
+  // Get updated reading list status
+  const status = await readingListService.calculateReadingListStatus(studentId);
+
+  res.status(201).json({
+    success: true,
+    message: result.errors.length === 0 
+      ? 'Knihy byly přidány do seznamu četby' 
+      : 'Některé knihy nebylo možné přidat',
+    data: result,
+    status
+  });
+});
+
+/**
+ * Remove multiple books from reading list
+ * DELETE /api/reading-lists/books
+ */
+const removeBooks = asyncHandler(async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    const errorMessage = errors.array().map(error => error.msg).join('<br> ');
+    throw new AppError(errorMessage, 400, errors.array());
+  }
+
+  const studentId = req.user.id;
+  const { bookIds } = req.body;
+
+  const result = {
+    removed: [],
+    notFound: []
+  };
+
+  for (const bookId of bookIds) {
+    try {
+      // Check if book exists in reading list
+      const hasBook = await studentBookRepository.hasBook(studentId, bookId);
+      
+      if (!hasBook) {
+        result.notFound.push({ bookId });
+        continue;
+      }
+
+      // Remove book from reading list
+      const removed = await studentBookRepository.removeBook(studentId, bookId);
+      
+      if (removed) {
+        result.removed.push({ bookId });
+      } else {
+        result.notFound.push({ bookId });
+      }
+    } catch (error) {
+      result.notFound.push({ bookId });
+    }
+  }
+
+  // Get updated reading list status
+  const status = await readingListService.calculateReadingListStatus(studentId);
+
+  res.json({
+    success: true,
+    message: result.notFound.length === 0
+      ? 'Knihy byly odstraněny z tvého seznamu četby'
+      : 'Některé knihy nebyly nalezeny ve tvém seznamu četby',
+    data: result,
+    status
+  });
+});
+
+/**
  * Get reading list status (validation against requirements)
  * GET /api/reading-lists/my/status
  */
@@ -221,6 +344,9 @@ module.exports = {
   addBook,
   addBookValidation,
   removeBook,
+  addBooks,
+  addBooksValidation,
+  removeBooks,
   getMyReadingListStatus,
   getMyReadingListPdf,
   getStudentReadingListPdf
