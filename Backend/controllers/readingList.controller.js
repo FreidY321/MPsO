@@ -37,6 +37,12 @@ const getMyReadingList = asyncHandler(async (req, res) => {
 const getStudentReadingList = asyncHandler(async (req, res) => {
   const { studentId } = req.params;
 
+  const student = await userRepository.findById(studentId);
+
+  if(student.role  !== 'student') {
+    throw new AppError('Zadané ID není žák', 400);
+  }
+
   if (req.user.role === 'teacher') {
 
     const student = await userRepository.findById(studentId);
@@ -290,6 +296,11 @@ const getMyReadingListStatus = asyncHandler(async (req, res) => {
 const getStudentReadingListStatus = asyncHandler(async (req, res) => {
   const { studentId } = req.params;
 
+  const student = await userRepository.findById(studentId);
+
+  if(student.role  !== 'student')
+    throw new AppError('Zadané ID není žák', 400);
+
   // Calculate reading list status
   const status = await readingListService.calculateReadingListStatus(studentId);
 
@@ -378,6 +389,10 @@ const getStudentReadingListPdf = asyncHandler(async (req, res) => {
   const { studentId } = req.params;
   
   const status = await readingListService.calculateReadingListStatus(parseInt(studentId));
+  const student = await userRepository.findById(studentId);
+  
+  if(student.role  !== 'student')
+    throw new AppError('Zadané ID není žák', 400);
 
   if (req.user.role === 'teacher') {
 
