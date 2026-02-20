@@ -354,6 +354,10 @@ const getClassReadingListStatus = asyncHandler(async (req, res) => {
  */
 const getMyReadingListPdf = asyncHandler(async (req, res) => {
   const studentId = req.user.id;
+  const status = await readingListService.calculateReadingListStatus(student.id);
+  
+  if(status.isComplete != true)
+    throw new AppError('Nelze vygenerovat PDF, protože maturitní seznam není hotový.', 400);
 
   // Generate PDF
   const pdfDoc = await pdfService.generateReadingListPdf(studentId);
@@ -372,6 +376,8 @@ const getMyReadingListPdf = asyncHandler(async (req, res) => {
  */
 const getStudentReadingListPdf = asyncHandler(async (req, res) => {
   const { studentId } = req.params;
+  
+  const status = await readingListService.calculateReadingListStatus(parseInt(studentId));
 
   if (req.user.role === 'teacher') {
 
@@ -391,6 +397,9 @@ const getStudentReadingListPdf = asyncHandler(async (req, res) => {
       throw new AppError('Nemáte přístup k maturitnímu listu tohoto žáka', 403);
     }
   }
+
+  if(status.isComplete != true)
+    throw new AppError('Nelze vygenerovat PDF, protože maturitní seznam není hotový.', 400);
 
   // Generate PDF
   const pdfDoc = await pdfService.generateReadingListPdf(parseInt(studentId));
