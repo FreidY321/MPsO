@@ -284,6 +284,71 @@ const getMyReadingListStatus = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Get reading list status (validation against requirements)
+ * GET /api/reading-lists/:studentId/status
+ */
+const getStudentReadingListStatus = asyncHandler(async (req, res) => {
+  const { studentId } = req.params;
+
+  // Calculate reading list status
+  const status = await readingListService.calculateReadingListStatus(studentId);
+
+  res.json({
+    success: true,
+    data: status
+  });
+});
+
+/**
+ * Get reading list status for all students in a class
+ * GET /api/reading-lists/class/:classId/status
+ */
+const getClassReadingListStatus = asyncHandler(async (req, res) => {
+  const { classId } = req.params;
+
+  // Check if class exists
+  const classData = await classRepository.findById(classId);
+  if (!classData) {
+    throw new AppError('Třída nebyla nalezena', 404);
+  }
+
+  // Check teacher access
+  if (req.user.role === 'teacher') {
+    if (classData.cj_teacher !== req.user.id) {
+      throw new AppError('Nemáte přístup k maturitním listům této třídy', 403);
+    }
+  }
+
+  // Get all students in the class
+  const students = await classRepository.getStudentsByClassId(classId);
+
+  // Get reading list status for each student
+  const studentStatuses = [];
+  for (const student of students) {
+    const status = await readingListService.calculateReadingListStatus(student.id);
+    studentStatuses.push({
+      studentId: student.id,
+      ...status
+    });
+  }
+
+  // Calculate summary
+  const completedCount = studentStatuses.filter(s => s.isComplete).length;
+
+  res.json({
+    success: true,
+    data: {
+      classId,
+      totalStudents: students.length,
+      completedStudents: completedCount,
+      pendingStudents: students.length - completedCount,
+      completionPercentage: students.length > 0 ? Math.round((completedCount / students.length) * 100) : 0,
+      studentStatuses
+    }
+  });
+});
+
+/**
  * Generate PDF for current student's reading list
  * GET /api/reading-lists/my/pdf
  */
@@ -348,6 +413,8 @@ module.exports = {
   addBooksValidation,
   removeBooks,
   getMyReadingListStatus,
+  getStudentReadingListStatus,
+  getClassReadingListStatus,
   getMyReadingListPdf,
   getStudentReadingListPdf
 };

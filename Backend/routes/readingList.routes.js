@@ -9,9 +9,9 @@ const {
   addBooks,
   addBooksValidation,
   removeBooks,
-  removeBooksValidation,
   getMyReadingListStatus,
-  finalizeReadingList,
+  getStudentReadingListStatus,
+  getClassReadingListStatus,
   getMyReadingListPdf,
   getStudentReadingListPdf
 } = require('../controllers/readingList.controller');
@@ -32,5 +32,7 @@ router.delete('/books/:bookId', authorizeRole(['student']), removeBook);
 // Admin/Teacher routes (admin get any student's reading list, teacher access only the lists of the students that they teach)
 router.get('/:studentId', authorizeRole(['admin', 'teacher']), getStudentReadingList);
 router.get('/:studentId/pdf', authorizeRole(['admin', 'teacher']), getStudentReadingListPdf);
+router.get('/:studentId/status', authorizeRole(['admin', 'teacher']), getStudentReadingListStatus);
+router.get('/class/:classId/status', authorizeRole(['admin', 'teacher']), getClassReadingListStatus);
 
 module.exports = router;
