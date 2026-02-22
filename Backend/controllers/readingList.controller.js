@@ -365,7 +365,7 @@ const getClassReadingListStatus = asyncHandler(async (req, res) => {
  */
 const getMyReadingListPdf = asyncHandler(async (req, res) => {
   const studentId = req.user.id;
-  const status = await readingListService.calculateReadingListStatus(student.id);
+  const status = await readingListService.calculateReadingListStatus(studentId);
   
   if(status.isComplete != true)
     throw new AppError('Nelze vygenerovat PDF, protože maturitní seznam není hotový.', 400);
@@ -390,7 +390,7 @@ const getStudentReadingListPdf = asyncHandler(async (req, res) => {
   
   const status = await readingListService.calculateReadingListStatus(parseInt(studentId));
   const student = await userRepository.findById(studentId);
-  
+
   if(student.role  !== 'student')
     throw new AppError('Zadané ID není žák', 400);
 
