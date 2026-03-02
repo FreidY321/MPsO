@@ -339,6 +339,10 @@ const getClassReadingListStatus = asyncHandler(async (req, res) => {
     const status = await readingListService.calculateReadingListStatus(student.id);
     studentStatuses.push({
       studentId: student.id,
+      name: student.name,
+      second_name: student.second_name,
+      surname: student.surname,
+      second_surname: student.second_surname,
       ...status
     });
   }
