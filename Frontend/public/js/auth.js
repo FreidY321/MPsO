@@ -98,7 +98,7 @@ function redirectToDashboard(user) {
   if (user.role === 'admin') {
     window.location.href = 'admin.html';
   } else if (user.role === 'teacher') {
-    window.location.href = 'admin.html'; // Teachers also use admin interface
+    window.location.href = 'teacher.html';
   } else if (user.role === 'student') {
     window.location.href = 'dashboard.html';
   } else {
@@ -222,7 +222,7 @@ async function fetchUserData(token) {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to fetch user data');
+      throw new Error('Nepodařilo se získat uživatelská data');
     }
 
     const data = await response.json();
@@ -240,7 +240,7 @@ async function fetchUserData(token) {
         redirectToDashboard(data.user);
       }, 500);
     } else {
-      throw new Error('Invalid user data');
+      throw new Error('Neplatná uživatelská data');
     }
 
   } catch (error) {
@@ -306,7 +306,7 @@ window.auth = {
         });
       }
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('Chyba při odhlášení:', error);
     } finally {
       // Clear local storage regardless of API call result
       clearAuth();

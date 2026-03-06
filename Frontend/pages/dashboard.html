@@ -46,14 +46,33 @@
             <h3>Statistiky</h3>
             <div class="stats-grid">
                 <!-- Total Books -->
-                <div class="stat-card">
-                    <div class="stat-icon">📚</div>
-                    <div class="stat-content">
-                        <div class="stat-value" id="totalBooks">0</div>
-                        <div class="stat-label">Celkem knih</div>
+                <div class="stat-completion">
+                    <div class="stat-card">
+                        <div class="stat-icon">📚</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="totalBooks">0</div>
+                            <div class="stat-label">Celkem knih</div>
+                        </div>
+                    </div>
+
+                    <!-- Literary Classes Completed -->
+                    <div class="stat-card">
+                        <div class="stat-icon">📖</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="literaryClassesCompleted">0</div>
+                            <div class="stat-label">Splněno literárních druhů</div>
+                        </div>
+                    </div>
+
+                    <!-- Periods Completed -->
+                    <div class="stat-card">
+                        <div class="stat-icon">📅</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="periodsCompleted">0</div>
+                            <div class="stat-label">Splněno období</div>
+                        </div>
                     </div>
                 </div>
-
                 <!-- Literary Classes Progress -->
                 <div class="stat-card full-width">
                     <h4>Literární druhy</h4>
@@ -73,8 +92,8 @@
                 <!-- Author Counts -->
                 <div class="stat-card full-width">
                     <h4>Autoři</h4>
-                    <div id="authorCounts" class="author-list">
-                        <!-- Dynamically populated -->
+                    <div id="authorCounts" class="author-grid">
+                                <!-- Dynamically populated -->
                     </div>
                 </div>
             </div>

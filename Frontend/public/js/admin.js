@@ -102,14 +102,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // Check if user is admin or teacher
+    // Check if user is admin
     const user = window.auth.getUser();
-    if (!user || (user.role !== 'admin' && user.role !== 'teacher')) {
+    if (!user || user.role !== 'admin') {
         if (window.utils && window.utils.notification) {
             window.utils.notification.error('Nemáte oprávnění k přístupu do administrace');
         }
         setTimeout(() => {
-            if (user && user.role === 'student') {
+            if (user && user.role === 'teacher') {
+                window.location.href = 'teacher.html';
+            } else if (user && user.role === 'student') {
                 window.location.href = 'dashboard.html';
             } else {
                 window.location.href = 'login.html';
@@ -323,20 +325,46 @@ async function saveClass(classId) {
     const form = document.getElementById('classForm');
     const formData = new FormData(form);
     
-    const data = {
+    const teacherId = formData.get('cj_teacher');
+    const newData = {
         name: formData.get('name'),
         year_ended: parseInt(formData.get('year_ended')),
-        deadline: formData.get('deadline') || null
+        deadline: formData.get('deadline') || null,
+        cj_teacher: (teacherId && teacherId !== '') ? parseInt(teacherId) : null
     };
     
-    // Include cj_teacher - null if not selected, otherwise the teacher ID
-    const teacherId = formData.get('cj_teacher');
-    data.cj_teacher = (teacherId && teacherId !== '') ? parseInt(teacherId) : null;
-    
     // Validation
-    if (!data.name || !data.year_ended) {
+    if (!newData.name || !newData.year_ended) {
         showNotification('Vyplňte všechna povinná pole', 'error');
         return;
+    }
+    
+    // If editing, send only changed fields
+    let data = newData;
+    if (classId) {
+        const originalClass = state.classes.find(c => c.id === classId);
+        data = {};
+        
+        // Compare each field and include only changed ones
+        if (newData.name !== originalClass.name) {
+            data.name = newData.name;
+        }
+        if (newData.year_ended !== originalClass.year_ended) {
+            data.year_ended = newData.year_ended;
+        }
+        if ((newData.deadline || null) !== (originalClass.deadline || null)) {
+            data.deadline = newData.deadline;
+        }
+        if ((newData.cj_teacher || null) !== (originalClass.cj_teacher || null)) {
+            data.cj_teacher = newData.cj_teacher;
+        }
+        
+        // If nothing changed, don't send request
+        if (Object.keys(data).length === 0) {
+            showNotification('Nebyly provedeny žádné změny', 'info');
+            closeModal();
+            return;
+        }
     }
     
     showLoading();
@@ -346,7 +374,7 @@ async function saveClass(classId) {
             await apiRequest(`/classes/${classId}`, 'PUT', data);
             showNotification('Třída byla úspěšně aktualizována', 'success');
         } else {
-            await apiRequest('/classes', 'POST', data);
+            await apiRequest('/classes', 'POST', newData);
             showNotification('Třída byla úspěšně vytvořena', 'success');
         }
         
@@ -669,30 +697,62 @@ async function saveUser(userId) {
     const form = document.getElementById('userForm');
     const formData = new FormData(form);
     
-    const data = {
-        role: formData.get('role') ? formData.get('role') : user.role,
+    const newData = {
+        role: formData.get('role'),
         degree: formData.get('degree') || null,
         name: formData.get('name'),
         surname: formData.get('surname'),
         email: formData.get('email'),
         class_id: formData.get('class_id') ? parseInt(formData.get('class_id')) : null
     };
-
-    console.log(data)
     
     if (!userId) {
-        data.password = formData.get('password');
+        newData.password = formData.get('password');
     }
     
     // Validation
-    if (!data.name || !data.surname || !data.email) {
+    if (!newData.name || !newData.surname || !newData.email) {
         showNotification('Vyplňte všechna povinná pole', 'error');
         return;
     }
     
-    if (!userId && (!data.password || data.password.length < 8)) {
+    if (!userId && (!newData.password || newData.password.length < 8)) {
         showNotification('Heslo musí mít minimálně 8 znaků', 'error');
         return;
+    }
+    
+    // If editing, send only changed fields
+    let data = newData;
+    if (userId) {
+        const originalUser = state.users.find(u => u.id === userId);
+        data = {};
+        
+        // Compare each field and include only changed ones
+        if (newData.role !== originalUser.role) {
+            data.role = newData.role;
+        }
+        if ((newData.degree || null) !== (originalUser.degree || null)) {
+            data.degree = newData.degree;
+        }
+        if (newData.name !== originalUser.name) {
+            data.name = newData.name;
+        }
+        if (newData.surname !== originalUser.surname) {
+            data.surname = newData.surname;
+        }
+        if (newData.email !== originalUser.email) {
+            data.email = newData.email;
+        }
+        if ((newData.class_id || null) !== (originalUser.class_id || null)) {
+            data.class_id = newData.class_id;
+        }
+        
+        // If nothing changed, don't send request
+        if (Object.keys(data).length === 0) {
+            showNotification('Nebyly provedeny žádné změny', 'info');
+            closeModal();
+            return;
+        }
     }
     
     showLoading();
@@ -702,7 +762,7 @@ async function saveUser(userId) {
             await apiRequest(`/users/${userId}`, 'PUT', data);
             showNotification('Uživatel byl úspěšně aktualizován', 'success');
         } else {
-            await apiRequest('/users', 'POST', data);
+            await apiRequest('/users', 'POST', newData);
             showNotification('Uživatel byl úspěšně vytvořen', 'success');
         }
         
@@ -725,15 +785,6 @@ function showBulkRegisterModal() {
         title: 'Hromadná registrace žáků',
         content: `
             <form id="bulkRegisterForm">
-                <div class="form-row single">
-                    <div class="form-group">
-                        <label for="bulkClass">Třída *</label>
-                        <select id="bulkClass" name="class_id" required>
-                            <option value="">Vyberte třídu</option>
-                            ${classOptions}
-                        </select>
-                    </div>
-                </div>
                 <div class="form-row single">
                     <div class="form-group">
                         <label>CSV soubor nebo JSON data</label>
@@ -775,11 +826,36 @@ function showBulkRegisterModal() {
     
     showModal(modal);
     
-    // File upload handling
+    // File upload handling with drag and drop
     const fileInput = document.getElementById('csvFile');
     const uploadArea = document.getElementById('fileUploadArea');
     
     uploadArea.addEventListener('click', () => fileInput.click());
+    
+    // Drag and drop events
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('drag-over');
+    });
+    
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('drag-over');
+    });
+    
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('drag-over');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            const file = files[0];
+            if (file) {
+                document.getElementById('fileSelected').style.display = 'flex';
+                document.querySelector('.file-name').textContent = file.name;
+            }
+        }
+    });
     
     fileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
@@ -796,14 +872,8 @@ window.clearFile = function() {
 };
 
 async function processBulkRegister() {
-    const classId = document.getElementById('bulkClass').value;
     const fileInput = document.getElementById('csvFile');
     const dataTextarea = document.getElementById('bulkData');
-    
-    if (!classId) {
-        showNotification('Vyberte třídu', 'error');
-        return;
-    }
     
     let students = [];
     
@@ -860,6 +930,7 @@ async function processBulkRegister() {
 }
 
 function parseCSV(text) {
+    console.log(text)
     const lines = text.trim().split('\n');
     const students = [];
     
@@ -940,7 +1011,7 @@ async function resetUserPassword(userId) {
                 onClick: async () => {
                     showLoading();
                     try {
-                        const response = await apiRequest(`/users/${userId}/reset-password`, 'POST');
+                        const response = await apiRequest(`/users/${userId}/reset-password`, 'POST', {});
                         
                         // Show new password
                         const passwordModal = createModal({
@@ -1115,7 +1186,7 @@ function showAuthorModal(authorId = null) {
             <form id="authorForm">
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="authorName">Jméno *</label>
+                        <label for="authorName">Jméno</label>
                         <input type="text" id="authorName" name="name" 
                                value="${author ? escapeHtml(author.name) : ''}" 
                                placeholder="Karel" required>
@@ -1164,7 +1235,7 @@ async function saveAuthor(authorId) {
     const form = document.getElementById('authorForm');
     const formData = new FormData(form);
     
-    const data = {
+    const newData = {
         name: formData.get('name'),
         second_name: formData.get('second_name') || null,
         surname: formData.get('surname'),
@@ -1172,9 +1243,37 @@ async function saveAuthor(authorId) {
     };
     
     // Validation
-    if (!data.name || !data.surname) {
+    if (!newData.surname) {
         showNotification('Vyplňte všechna povinná pole', 'error');
         return;
+    }
+    
+    // If editing, send only changed fields
+    let data = newData;
+    if (authorId) {
+        const originalAuthor = state.authors.find(a => a.id === authorId);
+        data = {};
+        
+        // Compare each field and include only changed ones
+        if ((newData.name || null) !== (originalAuthor.name || null)) {
+            data.name = newData.name;
+        }
+        if ((newData.second_name || null) !== (originalAuthor.second_name || null)) {
+            data.second_name = newData.second_name;
+        }
+        if (newData.surname !== originalAuthor.surname) {
+            data.surname = newData.surname;
+        }
+        if ((newData.second_surname || null) !== (originalAuthor.second_surname || null)) {
+            data.second_surname = newData.second_surname;
+        }
+        
+        // If nothing changed, don't send request
+        if (Object.keys(data).length === 0) {
+            showNotification('Nebyly provedeny žádné změny', 'info');
+            closeModal();
+            return;
+        }
     }
     
     showLoading();
@@ -1184,7 +1283,7 @@ async function saveAuthor(authorId) {
             await apiRequest(`/authors/${authorId}`, 'PUT', data);
             showNotification('Autor byl úspěšně aktualizován', 'success');
         } else {
-            await apiRequest('/authors', 'POST', data);
+            await apiRequest('/authors', 'POST', newData);
             showNotification('Autor byl úspěšně vytvořen', 'success');
         }
         
@@ -1407,21 +1506,46 @@ async function saveLiteraryClass(literaryClassId) {
     const form = document.getElementById('literaryClassForm');
     const formData = new FormData(form);
     
-    const data = {
+    const newData = {
         name: formData.get('name'),
         min_request: parseInt(formData.get('min_request')),
         max_request: parseInt(formData.get('max_request'))
     };
     
     // Validation
-    if (!data.name || isNaN(data.min_request) || isNaN(data.max_request)) {
+    if (!newData.name || isNaN(newData.min_request) || isNaN(newData.max_request)) {
         showNotification('Vyplňte všechna povinná pole', 'error');
         return;
     }
     
-    if (data.min_request > data.max_request) {
+    if (newData.min_request > newData.max_request) {
         showNotification('Minimální počet nemůže být větší než maximální', 'error');
         return;
+    }
+    
+    // If editing, send only changed fields
+    let data = newData;
+    if (literaryClassId) {
+        const originalLC = state.literaryClasses.find(lc => lc.id === literaryClassId);
+        data = {};
+        
+        // Compare each field and include only changed ones
+        if (newData.name !== originalLC.name) {
+            data.name = newData.name;
+        }
+        if (newData.min_request !== originalLC.min_request) {
+            data.min_request = newData.min_request;
+        }
+        if (newData.max_request !== originalLC.max_request) {
+            data.max_request = newData.max_request;
+        }
+        
+        // If nothing changed, don't send request
+        if (Object.keys(data).length === 0) {
+            showNotification('Nebyly provedeny žádné změny', 'info');
+            closeModal();
+            return;
+        }
     }
     
     showLoading();
@@ -1431,7 +1555,7 @@ async function saveLiteraryClass(literaryClassId) {
             await apiRequest(`/literary-classes/${literaryClassId}`, 'PUT', data);
             showNotification('Literární druh byl úspěšně aktualizován', 'success');
         } else {
-            await apiRequest('/literary-classes', 'POST', data);
+            await apiRequest('/literary-classes', 'POST', newData);
             showNotification('Literární druh byl úspěšně vytvořen', 'success');
         }
         
@@ -1541,21 +1665,46 @@ async function savePeriod(periodId) {
     const form = document.getElementById('periodForm');
     const formData = new FormData(form);
     
-    const data = {
+    const newData = {
         name: formData.get('name'),
         min_request: parseInt(formData.get('min_request')),
         max_request: parseInt(formData.get('max_request'))
     };
     
     // Validation
-    if (!data.name || isNaN(data.min_request) || isNaN(data.max_request)) {
+    if (!newData.name || isNaN(newData.min_request) || isNaN(newData.max_request)) {
         showNotification('Vyplňte všechna povinná pole', 'error');
         return;
     }
     
-    if (data.min_request > data.max_request) {
+    if (newData.min_request > newData.max_request) {
         showNotification('Minimální počet nemůže být větší než maximální', 'error');
         return;
+    }
+    
+    // If editing, send only changed fields
+    let data = newData;
+    if (periodId) {
+        const originalPeriod = state.periods.find(p => p.id === periodId);
+        data = {};
+        
+        // Compare each field and include only changed ones
+        if (newData.name !== originalPeriod.name) {
+            data.name = newData.name;
+        }
+        if (newData.min_request !== originalPeriod.min_request) {
+            data.min_request = newData.min_request;
+        }
+        if (newData.max_request !== originalPeriod.max_request) {
+            data.max_request = newData.max_request;
+        }
+        
+        // If nothing changed, don't send request
+        if (Object.keys(data).length === 0) {
+            showNotification('Nebyly provedeny žádné změny', 'info');
+            closeModal();
+            return;
+        }
     }
     
     showLoading();
@@ -1565,7 +1714,7 @@ async function savePeriod(periodId) {
             await apiRequest(`/periods/${periodId}`, 'PUT', data);
             showNotification('Období bylo úspěšně aktualizováno', 'success');
         } else {
-            await apiRequest('/periods', 'POST', data);
+            await apiRequest('/periods', 'POST', newData);
             showNotification('Období bylo úspěšně vytvořeno', 'success');
         }
         
@@ -1815,7 +1964,7 @@ async function saveBook(bookId) {
     const form = document.getElementById('bookForm');
     const formData = new FormData(form);
     
-    const data = {
+    const newData = {
         name: formData.get('name'),
         author_id: parseInt(formData.get('author_id')),
         translator_name: formData.get('translator_name') || '',
@@ -1825,9 +1974,43 @@ async function saveBook(bookId) {
     };
     
     // Validation
-    if (!data.name || !data.author_id || !data.literary_class || !data.period) {
+    if (!newData.name || !newData.author_id || !newData.literary_class || !newData.period) {
         showNotification('Vyplňte všechna povinná pole', 'error');
         return;
+    }
+    
+    // If editing, send only changed fields
+    let data = newData;
+    if (bookId) {
+        const originalBook = state.books.find(b => b.id === bookId);
+        data = {};
+        
+        // Compare each field and include only changed ones
+        if (newData.name !== originalBook.name) {
+            data.name = newData.name;
+        }
+        if (newData.author_id !== originalBook.author_id) {
+            data.author_id = newData.author_id;
+        }
+        if ((newData.translator_name || '') !== (originalBook.translator_name || '')) {
+            data.translator_name = newData.translator_name;
+        }
+        if (newData.literary_class !== originalBook.literary_class) {
+            data.literary_class = newData.literary_class;
+        }
+        if (newData.period !== originalBook.period) {
+            data.period = newData.period;
+        }
+        if ((newData.url_book || '') !== (originalBook.url_book || '')) {
+            data.url_book = newData.url_book;
+        }
+        
+        // If nothing changed, don't send request
+        if (Object.keys(data).length === 0) {
+            showNotification('Nebyly provedeny žádné změny', 'info');
+            closeModal();
+            return;
+        }
     }
     
     showLoading();
@@ -1837,7 +2020,7 @@ async function saveBook(bookId) {
             await apiRequest(`/books/${bookId}`, 'PUT', data);
             showNotification('Kniha byla úspěšně aktualizována', 'success');
         } else {
-            await apiRequest('/books', 'POST', data);
+            await apiRequest('/books', 'POST', newData);
             showNotification('Kniha byla úspěšně vytvořena', 'success');
         }
         
@@ -1961,3 +2144,4 @@ createModal = function(config) {
     window._currentModalButtons = config.buttons;
     return originalCreateModal(config);
 };
+

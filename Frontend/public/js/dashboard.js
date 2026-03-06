@@ -13,6 +13,8 @@ let readingListStatus = null;
 const userName = document.getElementById('userName');
 const userClass = document.getElementById('userClass');
 const totalBooksEl = document.getElementById('totalBooks');
+const literaryClassesCompleted = document.getElementById('literaryClassesCompleted');
+const periodsCompleted = document.getElementById('periodsCompleted');
 const literaryClassProgress = document.getElementById('literaryClassProgress');
 const periodProgress = document.getElementById('periodProgress');
 const authorCounts = document.getElementById('authorCounts');
@@ -84,22 +86,24 @@ async function loadReadingList() {
       throw new Error('Chybí autentizační token');
     }
 
-    // Fetch reading list
-    const response = await window.api.get('/reading-lists/my');
+    // Fetch reading list status from API
+    const statusResponse = await window.api.get('/reading-lists/my/status');
     
-    if (response.success) {
-      // Backend returns data directly as array of books
-      readingList = Array.isArray(response.data) ? response.data : [];
-      
-      // Calculate status from the books we have
-      readingListStatus = calculateStatusFromBooks(readingList);
-      
-      // Display data
-      displayStatistics();
-      displayReadingList();
+    if (statusResponse.success) {
+      readingListStatus = statusResponse.data;
     } else {
-      throw new Error(response.error?.message || 'Nepodařilo se načíst seznam četby');
+      throw new Error(statusResponse.error?.message || 'Nepodařilo se načíst status četby');
     }
+
+    // Fetch reading list books for display
+    const booksResponse = await window.api.get('/reading-lists/my');
+    if (booksResponse.success) {
+      readingList = Array.isArray(booksResponse.data) ? booksResponse.data : [];
+    }
+    
+    // Display data
+    displayStatistics();
+    displayReadingList();
   } catch (error) {
     console.error('Error loading reading list:', error);
     
@@ -118,78 +122,18 @@ async function loadReadingList() {
   }
 }
 
-/**
- * Calculate reading list status from books
- * This creates a simple status object from the books array
- */
-function calculateStatusFromBooks(books) {
-  const totalBooks = books.length;
-  
-  // Count by literary class
-  const literaryClassCounts = {};
-  const periodCounts = {};
-  const authorCounts = {};
-  
-  books.forEach(book => {
-    // Count literary classes
-    const lcKey = book.literary_class || book.literary_class_name || 'Nezařazeno';
-    literaryClassCounts[lcKey] = (literaryClassCounts[lcKey] || 0) + 1;
-    
-    // Count periods
-    const periodKey = book.period || book.period_name || 'Nezařazeno';
-    periodCounts[periodKey] = (periodCounts[periodKey] || 0) + 1;
-    
-    // Count authors
-    const authorKey = book.author_id || 'unknown';
-    const authorName = book.author_name || 'Neznámý autor';
-    if (!authorCounts[authorKey]) {
-      authorCounts[authorKey] = {
-        fullName: authorName,
-        count: 0,
-        canAddMore: true
-      };
-    }
-    authorCounts[authorKey].count++;
-    authorCounts[authorKey].canAddMore = authorCounts[authorKey].count < 2;
-  });
-  
-  // Convert to arrays for display
-  const literaryClassProgress = Object.entries(literaryClassCounts).map(([name, count]) => ({
-    name,
-    currentCount: count,
-    minRequired: 0,
-    maxAllowed: 999,
-    isSatisfied: true,
-    isOverLimit: false
-  }));
-  
-  const periodProgress = Object.entries(periodCounts).map(([name, count]) => ({
-    name,
-    currentCount: count,
-    minRequired: 0,
-    maxAllowed: 999,
-    isSatisfied: true,
-    isOverLimit: false
-  }));
-  
-  return {
-    totalBooks,
-    literaryClassProgress,
-    periodProgress,
-    authorCounts,
-    isComplete: false,
-    violations: []
-  };
-}
-
-/**
- * Display statistics
- * Requirements: 6.3, 6.4
- */
 function displayStatistics() {
   if (!readingListStatus) return;
   
-  // Total books
+  // Count completed literary classes and periods
+  const completedLiteraryClasses = readingListStatus.literaryClassProgress?.filter(lc => lc.isSatisfied && !lc.isOverLimit).length || 0;
+  const totalLiteraryClasses = readingListStatus.literaryClassProgress?.length || 0;
+  const completedPeriods = readingListStatus.periodProgress?.filter(p => p.isSatisfied && !p.isOverLimit).length || 0;
+  const totalPeriods = readingListStatus.periodProgress?.length || 0;
+  
+  // Display completed counts
+  literaryClassesCompleted.textContent = `${completedLiteraryClasses}/${totalLiteraryClasses}`;
+  periodsCompleted.textContent = `${completedPeriods}/${totalPeriods}`;
   totalBooksEl.textContent = readingListStatus.totalBooks || 0;
   
   // Literary class progress
@@ -205,10 +149,6 @@ function displayStatistics() {
   displayListStatus();
 }
 
-/**
- * Display literary class progress
- * Requirements: 6.3, 6.4
- */
 function displayLiteraryClassProgress() {
   if (!readingListStatus.literaryClassProgress) {
     literaryClassProgress.innerHTML = '<p style="color: #666; font-size: 13px;">Žádná data</p>';
@@ -226,32 +166,34 @@ function displayLiteraryClassProgress() {
       : 0;
     
     let fillClass = '';
+    let statusText = '';
+    
     if (item.isOverLimit) {
       fillClass = 'over-limit';
+      statusText = `${item.currentCount - item.maxAllowed} přebytek`;
     } else if (item.isSatisfied) {
       fillClass = 'complete';
-    } else if (item.currentCount > 0) {
+      statusText = 'Splněno';
+    } else {
       fillClass = 'warning';
+      statusText = `${item.minRequired - item.currentCount} chybí`;
     }
     
     progressItem.innerHTML = `
       <div class="progress-header">
         <span class="progress-name">${item.name}</span>
-        <span class="progress-count">${item.currentCount} / ${item.minRequired}-${item.maxAllowed}</span>
+        <span class="progress-status ${fillClass}">${statusText}</span>
       </div>
       <div class="progress-bar">
         <div class="progress-fill ${fillClass}" style="width: ${percentage}%"></div>
       </div>
+      <div class="progress-count">${item.currentCount} / ${item.minRequired}-${item.maxAllowed}</div>
     `;
     
     literaryClassProgress.appendChild(progressItem);
   });
 }
 
-/**
- * Display period progress
- * Requirements: 6.3, 6.4
- */
 function displayPeriodProgress() {
   if (!readingListStatus.periodProgress) {
     periodProgress.innerHTML = '<p style="color: #666; font-size: 13px;">Žádná data</p>';
@@ -261,40 +203,44 @@ function displayPeriodProgress() {
   periodProgress.innerHTML = '';
   
   readingListStatus.periodProgress.forEach(item => {
-    const progressItem = document.createElement('div');
+    const progressItem = document.createElement('a');
+    console.log(item);
     progressItem.className = 'progress-item';
+    progressItem.href =`#${item.name}`;
     
     const percentage = item.maxAllowed > 0 
       ? Math.min((item.currentCount / item.maxAllowed) * 100, 100)
       : 0;
     
     let fillClass = '';
+    let statusText = '';
+    
     if (item.isOverLimit) {
       fillClass = 'over-limit';
+      statusText = `${item.currentCount - item.maxAllowed} přebytek`;
     } else if (item.isSatisfied) {
       fillClass = 'complete';
-    } else if (item.currentCount > 0) {
+      statusText = 'Splněno';
+    } else {
       fillClass = 'warning';
+      statusText = `${item.minRequired - item.currentCount} chybí`;
     }
     
     progressItem.innerHTML = `
       <div class="progress-header">
         <span class="progress-name">${item.name}</span>
-        <span class="progress-count">${item.currentCount} / ${item.minRequired}-${item.maxAllowed}</span>
+        <span class="progress-status ${fillClass}">${statusText}</span>
       </div>
       <div class="progress-bar">
         <div class="progress-fill ${fillClass}" style="width: ${percentage}%"></div>
       </div>
+      <div class="progress-count">${item.currentCount} / ${item.minRequired}-${item.maxAllowed}</div>
     `;
     
     periodProgress.appendChild(progressItem);
   });
 }
 
-/**
- * Display author counts
- * Requirements: 6.3
- */
 function displayAuthorCounts() {
   if (!readingListStatus.authorCounts || Object.keys(readingListStatus.authorCounts).length === 0) {
     authorCounts.innerHTML = '<p style="color: #666; font-size: 13px;">Zatím žádní autoři</p>';
@@ -306,22 +252,32 @@ function displayAuthorCounts() {
   // Convert to array and sort by count descending
   const authors = Object.entries(readingListStatus.authorCounts)
     .map(([id, data]) => ({ id, ...data }))
-    .sort((a, b) => b.count - a.count);
+    .sort((a, b) => a.count - b.count);
   
   authors.forEach(author => {
     const authorItem = document.createElement('div');
     authorItem.className = 'author-item';
     
     let countClass = '';
-    if (author.count >= 2) {
-      countClass = 'limit-reached';
-    } else if (author.count === 1) {
+    let statusText = '';
+    
+    if (author.count == 2) {
       countClass = 'warning';
+      statusText = 'Max';
+    } else if (author.canAddMore) {
+      countClass = 'complete';
+      statusText = `Lze přidat`;
+    } else {
+      countClass = 'limit-reached';
+      statusText = `Přebytek knih`;
     }
     
     authorItem.innerHTML = `
-      <span class="author-name">${author.fullName}</span>
-      <span class="author-count ${countClass}">${author.count}</span>
+      <div class="author-name" title="${author.fullName}">${author.fullName}</div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+        <span class="author-count ${countClass}">${author.count}</span>
+        <span class="author-status">${statusText}</span>
+      </div>
     `;
     
     authorCounts.appendChild(authorItem);
@@ -342,13 +298,25 @@ function displayListStatus() {
     listStatus.className = 'list-status incomplete';
     const violationCount = readingListStatus.violations?.length || 0;
     listStatus.textContent = `⚠ Nesplněno (${violationCount} problémů)`;
+    
+    // Show violations in a tooltip or details
+    if (violationCount > 0) {
+      const violationsContainer = document.createElement('div');
+      violationsContainer.style.marginTop = '8px';
+      violationsContainer.style.fontSize = '13px';
+      violationsContainer.style.color = '#92400e';
+      
+      readingListStatus.violations.forEach(violation => {
+        const violationEl = document.createElement('div');
+        violationEl.textContent = `• ${violation}`;
+        violationsContainer.appendChild(violationEl);
+      });
+      
+      listStatus.appendChild(violationsContainer);
+    }
   }
 }
 
-/**
- * Display reading list grouped by categories
- * Requirements: 5.3
- */
 function displayReadingList() {
   if (!readingList || readingList.length === 0) {
     readingListContainer.style.display = 'none';
@@ -360,66 +328,89 @@ function displayReadingList() {
   emptyState.style.display = 'none';
   readingListContainer.innerHTML = '';
   
-  // Group books by literary class and period
-  const grouped = groupBooksByCategories(readingList);
+  // Group books by period first, then by literary class
+  const grouped = groupBooksByPeriodAndClass(readingList);
   
-  // Display each group
-  grouped.forEach(group => {
-    const categoryGroup = document.createElement('div');
-    categoryGroup.className = 'category-group';
+  // Display each period group
+  grouped.forEach(periodGroup => {
+    const periodSection = document.createElement('div');
+    periodSection.className = 'period-section';
     
-    const categoryHeader = document.createElement('div');
-    categoryHeader.className = 'category-header';
-    categoryHeader.innerHTML = `
-      <div class="category-title">${group.category}</div>
-    `;
+    const periodHeader = document.createElement('div');
+    periodHeader.className = 'period-header';
+    periodHeader.id = periodGroup.period
+    periodHeader.innerHTML = `<div class="period-title">${periodGroup.period}</div>`;
     
-    const bookList = document.createElement('div');
-    bookList.className = 'book-list';
+    const categoryList = document.createElement('div');
+    categoryList.className = 'category-list';
     
-    group.books.forEach(book => {
-      const bookItem = createBookItem(book);
-      bookList.appendChild(bookItem);
+    // Display each literary class within this period
+    periodGroup.categories.forEach(category => {
+      const summary = document.createElement('details');
+      summary.className = 'category-group';
+      
+      const summaryHeader = document.createElement('summary');
+      summaryHeader.className = 'category-header';
+      summaryHeader.innerHTML = `
+        <div class="category-title">${category.literaryClass}</div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="book-count">${category.books.length} knih</span>
+          <span class="toggle-icon">▶</span>
+        </div>
+      `;
+      
+      const bookList = document.createElement('div');
+      bookList.className = 'book-list';
+      
+      category.books.forEach(book => {
+        const bookItem = createBookItem(book);
+        bookList.appendChild(bookItem);
+      });
+      
+      summary.appendChild(summaryHeader);
+      summary.appendChild(bookList);
+      categoryList.appendChild(summary);
     });
     
-    categoryGroup.appendChild(categoryHeader);
-    categoryGroup.appendChild(bookList);
-    readingListContainer.appendChild(categoryGroup);
+    periodSection.appendChild(periodHeader);
+    periodSection.appendChild(categoryList);
+    readingListContainer.appendChild(periodSection);
   });
 }
 
-/**
- * Group books by literary class and period
- * Requirements: 5.3
- */
-function groupBooksByCategories(books) {
-  const groups = {};
+function groupBooksByPeriodAndClass(books) {
+  const periodGroups = {};
   
   books.forEach(book => {
-    const literaryClass = book.literary_class_name || 'Nezařazeno';
     const period = book.period_name || 'Nezařazeno';
-    const key = `${literaryClass} - ${period}`;
+    const literaryClass = book.literary_class_name || 'Nezařazeno';
     
-    if (!groups[key]) {
-      groups[key] = {
-        category: key,
-        literaryClass,
+    if (!periodGroups[period]) {
+      periodGroups[period] = {
         period,
+        categories: {}
+      };
+    }
+    
+    if (!periodGroups[period].categories[literaryClass]) {
+      periodGroups[period].categories[literaryClass] = {
+        literaryClass,
         books: []
       };
     }
     
-    groups[key].books.push(book);
+    periodGroups[period].categories[literaryClass].books.push(book);
   });
   
   // Convert to array and sort
-  return Object.values(groups).sort((a, b) => {
-    // Sort by literary class, then by period
-    if (a.literaryClass !== b.literaryClass) {
-      return a.literaryClass.localeCompare(b.literaryClass, 'cs');
-    }
-    return a.period.localeCompare(b.period, 'cs');
-  });
+  return Object.entries(periodGroups)
+    .map(([period, data]) => ({
+      period,
+      categories: Object.values(data.categories).sort((a, b) => 
+        a.literaryClass.localeCompare(b.literaryClass, 'cs')
+      )
+    }))
+    .sort((a, b) => a.period.localeCompare(b.period, 'cs'));
 }
 
 /**
@@ -429,13 +420,15 @@ function createBookItem(book) {
   const bookItem = document.createElement('div');
   bookItem.className = 'book-item';
   bookItem.dataset.bookId = book.id;
-  
-  const authorName = book.author_name || 'Neznámý autor';
+  const fullName = [book.author_name, book.author_second_name, book.author_surname, book.author_second_surname]
+        .filter(Boolean)
+        .join(' ');
+  const authorName = fullName || 'Neznámý autor';
   const periodName = book.period_name || 'Neznámé období';
   
   bookItem.innerHTML = `
     <div class="book-info">
-      <div class="book-title">${book.name}</div>
+      <div class="book-title">${book.book_name}</div>
       <div class="book-meta">
         <span class="book-author">${authorName}</span>
         <span class="book-period">${periodName}</span>
@@ -447,7 +440,7 @@ function createBookItem(book) {
           <path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
       </a>` : ''}
-      <button class="btn-icon btn-delete" onclick="removeBook(${book.id})" title="Odebrat knihu">
+      <button class="btn-icon btn-delete" onclick="removeBook(${book.id_book})" title="Odebrat knihu">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M2 4h12M5.333 4V2.667a1.333 1.333 0 011.334-1.334h2.666a1.333 1.333 0 011.334 1.334V4m2 0v9.333a1.333 1.333 0 01-1.334 1.334H4.667a1.333 1.333 0 01-1.334-1.334V4h9.334z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>

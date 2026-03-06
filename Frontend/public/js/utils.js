@@ -174,7 +174,7 @@ const stringFormat = {
     const parts = [];
     if (user.degree) parts.push(user.degree);
     if (user.name) parts.push(user.name);
-    if (user.seccond_name) parts.push(user.seccond_name);
+    if (user.second_name) parts.push(user.second_name);
     if (user.surname) parts.push(user.surname);
     if (user.second_surname) parts.push(user.second_surname);
     
@@ -207,6 +207,18 @@ const stringFormat = {
   truncate: (str, maxLength = 50) => {
     if (!str || str.length <= maxLength) return str;
     return str.substring(0, maxLength - 3) + '...';
+  },
+  
+  /**
+   * Sanitize input - convert empty/whitespace strings to null
+   * Useful for form inputs where empty strings should be treated as null
+   * @param {any} value - Value to sanitize
+   * @returns {string|null|any} Trimmed string, null if empty, or original value if not a string
+   */
+  sanitize: (value) => {
+    if (typeof value !== 'string') return value;
+    const trimmed = value.trim();
+    return trimmed === '' ? null : trimmed;
   }
 };
 

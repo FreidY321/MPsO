@@ -15,6 +15,7 @@ let readingListStatus = null;
 let readingListBooks = [];
 
 // DOM Elements
+const searchInput = document.getElementById('searchInput');
 const literaryClassFilter = document.getElementById('literaryClassFilter');
 const periodFilter = document.getElementById('periodFilter');
 const authorFilter = document.getElementById('authorFilter');
@@ -164,7 +165,7 @@ async function loadReadingList() {
     const response = await window.api.get('/reading-lists/my');
     
     if (response.success) {
-      readingListBooks = response.data.books || [];
+      readingListBooks = Array.isArray(response.data) ? response.data : (response.data?.books || []);
     } else {
       throw new Error(response.error?.message || 'Nepodařilo se načíst seznam četby');
     }
@@ -207,6 +208,10 @@ async function loadBooks() {
     if (response.success) {
       allBooks = response.data || [];
       filteredBooks = [...allBooks];
+      // Apply search filter if present
+      if (searchInput.value.trim()) {
+        applySearchFilter();
+      }
     } else {
       throw new Error(response.error?.message || 'Nepodařilo se načíst knihy');
     }
@@ -250,6 +255,22 @@ function populateFilters() {
 }
 
 /**
+ * Apply search filter to books
+ */
+function applySearchFilter() {
+  const searchTerm = searchInput.value.trim().toLowerCase();
+  
+  if (!searchTerm) {
+    filteredBooks = [...allBooks];
+    return;
+  }
+  
+  filteredBooks = allBooks.filter(book => 
+    book.name.toLowerCase().includes(searchTerm)
+  );
+}
+
+/**
  * Display books in grid
  */
 function displayBooks() {
@@ -267,8 +288,30 @@ function displayBooks() {
   emptyState.style.display = 'none';
   booksContainer.innerHTML = '';
   
+  // Apply search filter
+  applySearchFilter();
+  
+  // Sort books: 1. Not in list, 2. In list, 3. Author limit reached
+  const sortedBooks = [...filteredBooks].sort((a, b) => {
+    const aInList = isBookInReadingList(a.id);
+    const bInList = isBookInReadingList(b.id);
+    const aAuthorLimit = isAuthorLimitReached(a.author_id);
+    const bAuthorLimit = isAuthorLimitReached(b.author_id);
+    
+    // Books in list go after books not in list
+    if (aInList && !bInList) return 1;
+    if (!aInList && bInList) return -1;
+
+    // Author limit books go to the end
+    if (aAuthorLimit && !bAuthorLimit) return 1;
+    if (!aAuthorLimit && bAuthorLimit) return -1;
+    
+    // Default sort by title
+    return a.name.localeCompare(b.name, 'cs');
+  });
+  
   // Create book cards
-  filteredBooks.forEach(book => {
+  sortedBooks.forEach(book => {
     const bookCard = createBookCard(book);
     booksContainer.appendChild(bookCard);
   });
@@ -281,8 +324,10 @@ function createBookCard(book) {
   const card = document.createElement('div');
   card.className = 'book-card';
   card.dataset.bookId = book.id;
-  
-  const authorName = book.author_name || 'Neznámý autor';
+  const fullName = [book.author_name, book.author_second_name, book.author_surname, book.author_second_surname]
+        .filter(Boolean)
+        .join(' ');
+  const authorName = fullName || 'Neznámý autor';
   const literaryClassName = book.literary_class_name || 'Nezařazeno';
   const periodName = book.period_name || 'Nezařazeno';
   
@@ -292,6 +337,7 @@ function createBookCard(book) {
   // Check if author limit is reached
   const authorLimitReached = isAuthorLimitReached(book.author_id);
   
+  console.log(book,isInList);
   // Determine if add button should be disabled
   const canAdd = !isInList && !authorLimitReached;
   
@@ -302,6 +348,14 @@ function createBookCard(book) {
   } else if (authorLimitReached) {
     statusHtml = '<div class="book-card-status author-limit">⚠ Limit autora (2/2)</div>';
   }
+  
+  // Button text and action
+  const buttonAction = isInList 
+    ? `onclick="removeBookFromList(${book.id})"` 
+    : `onclick="addBookToList(${book.id})"`;
+  const buttonText = isInList 
+    ? 'Odstranit' 
+    : (authorLimitReached ? '⚠ Limit autora' : 'Přidat do seznamu');
   
   card.innerHTML = `
     <div class="book-card-header">
@@ -330,11 +384,11 @@ function createBookCard(book) {
     
     <div class="book-card-footer">
       <button 
-        class="btn btn-add" 
-        onclick="addBookToList(${book.id})"
-        ${!canAdd ? 'disabled' : ''}
+        class="btn ${isInList ? "btn-delete": "btn-add"}"
+        ${buttonAction}
+        ${authorLimitReached && !isInList ? 'disabled' : ''}
       >
-        ${isInList ? '✓ Přidáno' : '+ Přidat do seznamu'}
+        ${buttonText}
       </button>
       ${book.url_book ? `
         <a href="${book.url_book}" target="_blank" class="btn btn-info" title="Zobrazit informace">
@@ -354,8 +408,7 @@ function isBookInReadingList(bookId) {
   if (!readingListBooks || readingListBooks.length === 0) {
     return false;
   }
-  
-  return readingListBooks.some(book => book.id === bookId);
+  return readingListBooks.some(book => book.id_book == bookId);
 }
 
 /**
@@ -417,10 +470,40 @@ async function addBookToList(bookId) {
 }
 
 /**
+ * Remove book from reading list
+ */
+async function removeBookFromList(bookId) {
+  if (!confirm('Opravdu chcete odstranit tuto knihu ze svého seznamu četby?')) {
+    return;
+  }
+  
+  showLoading();
+  
+  try {
+    const response = await window.api.delete(`/reading-lists/books/${bookId}`);
+    
+    if (response.success) {
+      window.utils.notification.success('Kniha byla odstraněna ze seznamu');
+      
+      // Reload reading list status and books
+      await loadReadingListStatus();
+      await loadReadingList();
+      displayBooks();
+    } else {
+      throw new Error(response.error?.message || 'Nepodařilo se odstranit knihu');
+    }
+  } catch (error) {
+    console.error('Error removing book:', error);
+    window.utils.notification.error('Chyba při odstraňování knihy: ' + error.message);
+  } finally {
+    hideLoading();
+  }
+}
+
+/**
  * Handle filter change
  */
 async function handleFilterChange() {
-  showLoading();
   
   try {
     // Reload books with new filters
@@ -440,6 +523,7 @@ async function handleFilterChange() {
  * Clear all filters
  */
 async function clearFilters() {
+  searchInput.value = '';
   literaryClassFilter.value = '';
   periodFilter.value = '';
   authorFilter.value = '';
@@ -474,6 +558,10 @@ function hideLoading() {
  * Attach event listeners
  */
 function attachEventListeners() {
+  if (searchInput) {
+    searchInput.addEventListener('input', handleFilterChange);
+  }
+  
   if (literaryClassFilter) {
     literaryClassFilter.addEventListener('change', handleFilterChange);
   }
