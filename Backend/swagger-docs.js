@@ -476,7 +476,6 @@
  *             type: object
  *             required:
  *               - students
- *               - class_id
  *             properties:
  *               students:
  *                 type: array
@@ -499,11 +498,15 @@
  *                       type: string
  *                     email:
  *                       type: string
- *               class_id:
- *                 type: integer
+ *                       format: email
+ *                     class_id:
+ *                       type: integer
+ *                     password:
+ *                       type: string
+ *                       description: Volitelné - pokud vyplněno, použije se, jinak se vygeneruje náhodné heslo
  *     responses:
  *       201:
- *         description: Žáci vytvořeni
+ *         description: Všechny účty úspěšně vytvořeny
  *         content:
  *           application/json:
  *             schema:
@@ -514,7 +517,7 @@
  *                   example: true
  *                 message:
  *                   type: string
- *                   example: Všichni žáci byli úspěšně vytvořeni
+ *                   example: Bylo vytvořeno 25 studentských účtů
  *                 count:
  *                   type: integer
  *                   example: 25
@@ -523,6 +526,47 @@
  *                   items:
  *                     type: object
  *                     properties:
+ *                       id:
+ *                         type: integer
+ *                         example: 123
+ *                       email:
+ *                         type: string
+ *                         example: jan.novak@spseiostrava.cz
+ *                       password:
+ *                         type: string
+ *                         example: TempPass123!
+ *                       name:
+ *                         type: string
+ *                         example: Jan
+ *                       surname:
+ *                         type: string
+ *                         example: Novák
+ *       207:
+ *         description: Část účtů úspěšně vytvořena, část selhala
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Bylo vytvořeno 23 studentských účtů, 2 řádků selhalo
+ *                 createdCount:
+ *                   type: integer
+ *                   example: 23
+ *                 errorCount:
+ *                   type: integer
+ *                   example: 2
+ *                 credentials:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
  *                       email:
  *                         type: string
  *                       password:
@@ -531,6 +575,20 @@
  *                         type: string
  *                       surname:
  *                         type: string
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       index:
+ *                         type: integer
+ *                         description: Index řádku v CSV
+ *                       email:
+ *                         type: string
+ *                         description: Email, u kterého došlo k chybě
+ *                       error:
+ *                         type: string
+ *                         description: Popis chyby (např. 'Uživatel s tímto emailem již existuje')
  *       400:
  *         $ref: '#/components/responses/ValidationError'
  *       403:

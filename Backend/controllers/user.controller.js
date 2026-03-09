@@ -345,7 +345,8 @@ const bulkRegistrationValidation = [
     .isEmail()
     .withMessage('Validní email je povinný pro každého studenta.')
     .normalizeEmail({ gmail_remove_dots: false }),
-  body('class_id')
+  body('students.*class_id')
+    .optional()
     .isInt({ min: 1 })
     .withMessage('ID třídy musí být přirozené číslo')
 ];
@@ -364,15 +365,17 @@ const bulkRegistration = asyncHandler(async (req, res) => {
     throw new AppError(errorMessage, 400, errors.array());
   }
 
-  const { students, class_id } = req.body;
+  const { students} = req.body;
   const { generateRandomPassword } = require('../utils/password');
 
-  // Validate all students before creating any accounts
+  // Process students: create valid ones, collect errors for invalid ones
   const validationErrors = [];
+  const credentials = [];
   const emailSet = new Set();
 
   for (let i = 0; i < students.length; i++) {
     const student = students[i];
+    let hasError = false;
     
     // Check for duplicate emails within the batch
     if (emailSet.has(student.email)) {
@@ -381,73 +384,91 @@ const bulkRegistration = asyncHandler(async (req, res) => {
         email: student.email,
         error: 'Stejný email u dvou či více studentů v poli'
       });
+      hasError = true;
     }
-    emailSet.add(student.email);
-
+    
     // Check if email already exists in database
-    const existingUser = await userRepository.findByEmail(student.email);
-    if (existingUser) {
-      validationErrors.push({
-        index: i,
+    if (!hasError) {
+      const existingUser = await userRepository.findByEmail(student.email);
+      if (existingUser) {
+        validationErrors.push({
+          index: i,
+          email: student.email,
+          error: 'Uživatel s tímto emailem již existuje'
+        });
+        hasError = true;
+      }
+    }
+    
+    // If no validation errors, create the student account
+    if (!hasError) {
+      emailSet.add(student.email);
+      let hashedPassword;
+      let plainPassword;
+      /*
+        TO DO
+        Add env variable for email domain for school google accounts
+      */
+      if(!student.email.includes('@spseiostrava.cz')){
+        if(student.password){
+          plainPassword = student.password;
+        }else{
+          plainPassword = generateRandomPassword();
+        }
+        hashedPassword = await hashPassword(plainPassword);
+      }else{
+        plainPassword = "Přihlášení přes Google účet";
+      }
+      
+      
+
+      // Create student data
+      const studentData = {
+        role: 'student',
+        name: student.name,
+        surname: student.surname,
         email: student.email,
-        error: 'Uživatel s tímto emailem již existuje'
+        class_id: student.class_id
+      };
+
+      // Add optional fields
+      if (hashedPassword) studentData.password = hashedPassword;
+      if (student.degree) studentData.degree = student.degree;
+      if (student.second_name) studentData.second_name = student.second_name;
+      if (student.second_surname) studentData.second_surname = student.second_surname;
+
+      // Create student
+      const newStudent = await userRepository.create(studentData);
+
+      // Store credentials for response
+      credentials.push({
+        id: newStudent.id,
+        email: student.email,
+        password: plainPassword,
+        name: student.name,
+        surname: student.surname
       });
     }
   }
 
-  // If there are validation errors, return them without creating any accounts
+  // Return results
   if (validationErrors.length > 0) {
-    throw new AppError('Validace selhala pro některé studenty', 400, validationErrors);
-  }
-
-  // All validations passed, create all student accounts
-  const createdStudents = [];
-  const credentials = [];
-
-  for (const student of students) {
-    // Generate random password
-    const plainPassword = generateRandomPassword();
-    const hashedPassword = await hashPassword(plainPassword);
-
-    // Create student data
-    const studentData = {
-      role: 'student',
-      name: student.name,
-      surname: student.surname,
-      email: student.email,
-      password: hashedPassword,
-      class_id: class_id
-    };
-
-    // Add optional fields
-    if (student.degree) studentData.degree = student.degree;
-    if (student.second_name) studentData.second_name = student.second_name;
-    if (student.second_surname) studentData.second_surname = student.second_surname;
-
-    // Create student
-    const newStudent = await userRepository.create(studentData);
-    
-    // Remove password from response
-    const { password: _, ...studentWithoutPassword } = newStudent;
-    createdStudents.push(studentWithoutPassword);
-
-    // Store credentials for response
-    credentials.push({
-      id: newStudent.id,
-      email: student.email,
-      password: plainPassword,
-      name: student.name,
-      surname: student.surname
+    res.status(207).json({
+      success: true,
+      message: `Bylo vytvořeno ${credentials.length} studentských účtů, ${validationErrors.length} řádků selhalo`,
+      createdCount: credentials.length,
+      errorCount: validationErrors.length,
+      credentials: credentials,
+      errors: validationErrors
+    });
+  } else {
+    res.status(201).json({
+      success: true,
+      message: `Bylo vytvořeno ${credentials.length} studentských účtů`,
+      count: credentials.length,
+      credentials: credentials
     });
   }
-
-  res.status(201).json({
-    success: true,
-    message: `Bylo vytvořeno ${createdStudents.length} studentských účtů`,
-    count: createdStudents.length,
-    data: createdStudents,
-    credentials: credentials
-  });
 });
 
 module.exports = {

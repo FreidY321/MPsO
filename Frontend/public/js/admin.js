@@ -776,11 +776,7 @@ async function saveUser(userId) {
     }
 }
 
-function showBulkRegisterModal() {
-    const classOptions = state.classes.map(c => 
-        `<option value="${c.id}">${escapeHtml(c.name)}</option>`
-    ).join('');
-    
+function showBulkRegisterModal() {    
     const modal = createModal({
         title: 'Hromadná registrace žáků',
         content: `
@@ -871,7 +867,7 @@ window.clearFile = function() {
     document.getElementById('fileSelected').style.display = 'none';
 };
 
-async function processBulkRegister() {
+async function processBulkRegister() {   
     const fileInput = document.getElementById('csvFile');
     const dataTextarea = document.getElementById('bulkData');
     
@@ -880,11 +876,12 @@ async function processBulkRegister() {
     // Parse from file or textarea
     if (fileInput.files.length > 0) {
         const file = fileInput.files[0];
-        const text = await file.text();
-        
-        if (file.name.endsWith('.csv')) {
+        let text;
+        if (file.name.toLowerCase().endsWith('.csv')) {
+            text = await readFileWithEncoding(file, 'windows-1250');
             students = parseCSV(text);
-        } else if (file.name.endsWith('.json')) {
+        } else if (file.name.toLowerCase().endsWith('.json')) {
+            text = await file.text();
             try {
                 students = JSON.parse(text);
             } catch (e) {
@@ -913,12 +910,11 @@ async function processBulkRegister() {
     
     try {
         const response = await apiRequest('/users/bulk', 'POST', {
-            class_id: parseInt(classId),
             students: students
         });
         
         // Show results
-        showBulkRegisterResults(response.data);
+        showBulkRegisterResults(response.credentials);
         
         await loadUsers();
         
@@ -929,25 +925,70 @@ async function processBulkRegister() {
     }
 }
 
+function readFileWithEncoding(file, encoding) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        
+        reader.onload = (e) => {
+            const arrayBuffer = e.target.result;
+            const decoder = new TextDecoder(encoding, { fatal: true });
+            try {
+                resolve(decoder.decode(arrayBuffer));
+            } catch (err) {
+                // Fallback to UTF-8 if decoding fails
+                resolve(new TextDecoder('utf-8').decode(arrayBuffer));
+            }
+        };
+        
+        reader.onerror = () => reject(reader.error);
+        reader.readAsArrayBuffer(file);
+    });
+}
+
 function parseCSV(text) {
-    console.log(text)
+    const classMap = state.classes.reduce((map, c) => {
+        map[c.name] = c.id;
+        return map;
+    }, {});
     const lines = text.trim().split('\n');
     const students = [];
+    if (lines.length === 0) return students;
     
-    // Skip header if present
-    const startIndex = lines[0].toLowerCase().includes('name') ? 1 : 0;
+    // Parse header to find column indices
+    const headerLine = lines[0].toLowerCase();
+    const headers = headerLine.toLowerCase().split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+    
+    const colIndices = {
+        name: headers.findIndex(h => h.includes('name') || h.includes('jmeno')),
+        surname: headers.findIndex(h => h.includes('surname') || h.includes('last') || h.includes('prijmeni')),
+        email: headers.findIndex(h => h.includes('email')),
+        class: headers.findIndex(h => h.includes('class') || h.includes('trida')),
+        password: headers.findIndex(h => h.includes('password') || h.includes('heslo'))
+    };
+    
+    // Skip header row
+    const startIndex = 1;
     
     for (let i = startIndex; i < lines.length; i++) {
-        const parts = lines[i].split(',').map(p => p.trim());
-        if (parts.length >= 3) {
-            students.push({
-                name: parts[0],
-                surname: parts[1],
-                email: parts[2]
-            });
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        // Handle quoted CSV fields
+        const parts = line.split(",");
+        const student = {
+            name: parts[colIndices.name] || null,
+            surname: parts[colIndices.surname] || null,
+            email: parts[colIndices.email] || null,
+            class_id: classMap[parts[colIndices.class]] || null,
+            password: parts[colIndices.password] || null
+        };
+        
+        // Only add if we have at least name and email
+        if (student.name && student.surname &&  student.email) {
+            students.push(student);
         }
     }
-    
+
     return students;
 }
 
