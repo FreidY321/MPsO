@@ -659,10 +659,10 @@ function showUserModal(userId = null) {
                 ${!isEdit ? `
                     <div class="form-row single">
                         <div class="form-group">
-                            <label for="userPassword">Heslo *</label>
+                            <label for="userPassword">Heslo </label>
                             <input type="password" id="userPassword" name="password" 
-                                   placeholder="Minimálně 8 znaků" required>
-                            <!--<p class="form-help">Pro žáky můžete nechat vygenerovat automaticky</p>-->
+                                   placeholder="Minimálně 8 znaků">
+                            <p class="form-help">Pokud nevyplníte, uživatel se přihlásí pouze přes Google</p>
                         </div>
                     </div>
                 ` : ''}
@@ -707,7 +707,7 @@ async function saveUser(userId) {
     };
     
     if (!userId) {
-        newData.password = formData.get('password');
+        newData.password = formData.get('password').trim() || null;
     }
     
     // Validation
@@ -716,9 +716,17 @@ async function saveUser(userId) {
         return;
     }
     
-    if (!userId && (!newData.password || newData.password.length < 8)) {
+    if (!userId && (newData.password && newData.password.length < 8)) {
         showNotification('Heslo musí mít minimálně 8 znaků', 'error');
         return;
+    }
+    
+    // Confirm password creation if no password provided for new user
+    if (!userId && !newData.password) {
+        const confirmMessage = `Vytvořit uživatele bez hesla? Uživatel bude moci přihlásit pouze přes Google účet.\n\nEmail: ${newData.email}`;
+        if (!confirm(confirmMessage)) {
+            return;
+        }
     }
     
     // If editing, send only changed fields

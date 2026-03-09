@@ -101,7 +101,7 @@ const createUserValidation = [
     .withMessage('Validní email je povinný.')
     .normalizeEmail({ gmail_remove_dots: false }),
   body('password')
-    .optional()
+    .optional({values: 'null'})
     .isLength({ min: 8 })
     .withMessage('Heslo musí mít minimálně 8 znaků.'),
   body('class_id')
