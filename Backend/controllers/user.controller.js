@@ -1,5 +1,6 @@
 const { body, param, validationResult } = require('express-validator');
 const UserRepository = require('../repositories/UserRepository');
+const ClassRepository = require('../repositories/ClassRepository');
 const { hashPassword } = require('../utils/password');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
@@ -367,6 +368,7 @@ const bulkRegistration = asyncHandler(async (req, res) => {
 
   const { students} = req.body;
   const { generateRandomPassword } = require('../utils/password');
+  const classRepository = new ClassRepository();
 
   // Process students: create valid ones, collect errors for invalid ones
   const validationErrors = [];
@@ -388,16 +390,24 @@ const bulkRegistration = asyncHandler(async (req, res) => {
     }
     
     // Check if email already exists in database
-    if (!hasError) {
-      const existingUser = await userRepository.findByEmail(student.email);
-      if (existingUser) {
-        validationErrors.push({
-          index: i,
-          email: student.email,
-          error: 'Uživatel s tímto emailem již existuje'
-        });
-        hasError = true;
-      }
+    const existingUser = await userRepository.findByEmail(student.email);
+    if (existingUser) {
+      validationErrors.push({
+        index: i,
+        email: student.email,
+        error: 'Uživatel s tímto emailem již existuje'
+      });
+      hasError = true;
+    }
+    
+    //Check if class with that id exists in database
+    if(student.class_id && await classRepository.findById(student.class_id) == null){
+      validationErrors.push({
+        index: i,
+        email: student.email,
+        error: 'Třída s tímto ID neexistuje'
+      });
+      hasError = true;
     }
     
     // If no validation errors, create the student account
@@ -420,18 +430,16 @@ const bulkRegistration = asyncHandler(async (req, res) => {
         plainPassword = "Přihlášení přes Google účet";
       }
       
-      
-
       // Create student data
       const studentData = {
         role: 'student',
         name: student.name,
         surname: student.surname,
-        email: student.email,
-        class_id: student.class_id
+        email: student.email
       };
 
       // Add optional fields
+      if (student.class_id) studentData.class_id = student.class_id;
       if (hashedPassword) studentData.password = hashedPassword;
       if (student.degree) studentData.degree = student.degree;
       if (student.second_name) studentData.second_name = student.second_name;
