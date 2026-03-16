@@ -374,15 +374,14 @@ const getMyReadingListPdf = asyncHandler(async (req, res) => {
   if(status.isComplete != true)
     throw new AppError('Nelze vygenerovat PDF, protože maturitní seznam není hotový.', 400);
 
-  // Generate PDF
-  const pdfDoc = await pdfService.generateReadingListPdf(studentId);
+  const pdfBuffer = await pdfService.generateReadingListPdf(studentId);
 
-  // Set response headers for PDF
-  res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', 'attachment; filename=reading-list.pdf');
-
-  // Pipe PDF to response
-  pdfDoc.pipe(res);
+  res.set({
+    'Content-Type': 'application/pdf',
+    'Content-Disposition': 'attachment; filename=reading-list.pdf'
+  });
+  
+  res.send(pdfBuffer);
 });
 
 /**
@@ -421,14 +420,15 @@ const getStudentReadingListPdf = asyncHandler(async (req, res) => {
     throw new AppError('Nelze vygenerovat PDF, protože maturitní seznam není hotový.', 400);
 
   // Generate PDF
-  const pdfDoc = await pdfService.generateReadingListPdf(parseInt(studentId));
+  const pdfBuffer = await pdfService.generateReadingListPdf(parseInt(studentId));
 
   // Set response headers for PDF
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename=reading-list-student-${studentId}.pdf`);
+  res.setHeader('Content-Length', pdfBuffer.length);
 
-  // Pipe PDF to response
-  pdfDoc.pipe(res);
+  // Send PDF buffer
+  res.send(pdfBuffer);
 });
 
 module.exports = {

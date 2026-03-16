@@ -482,10 +482,6 @@ async function removeBook(bookId) {
   }
 }
 
-/**
- * Generate and download PDF
- * Requirements: 7.1
- */
 async function generatePdf() {
   showLoading();
   
@@ -496,7 +492,7 @@ async function generatePdf() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `seznam-cetby-${currentUser.surname || 'student'}.pdf`;
+    a.download = `seznam-cetby.pdf`;
     document.body.appendChild(a);
     a.click();
     

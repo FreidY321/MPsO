@@ -55,7 +55,7 @@ class StudentBookRepository {
       INNER JOIN Periods p ON b.period = p.id
       INNER JOIN Literary_classes lc ON b.literary_class = lc.id
       WHERE sb.id_student = ?
-      ORDER BY lc.name, p.name, b.name
+      ORDER BY sb.id_book
     `;
     return await this.query(sql, [studentId]);
   }

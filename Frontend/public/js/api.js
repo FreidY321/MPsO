@@ -192,7 +192,12 @@ const api = {
    */
   downloadFile: async (endpoint) => {
     const url = `${API_CONFIG.baseURL}${endpoint}`;
-    const headers = buildHeaders();
+    
+    const headers = {};
+    const token = getAuthToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
     
     const response = await fetch(url, {
       method: 'GET',
@@ -205,7 +210,10 @@ const api = {
       throw error;
     }
     
-    return await response.blob();
+    const arrayBuffer = await response.arrayBuffer();
+    const contentType = response.headers.get('content-type') || 'application/pdf';
+    const blob = new Blob([arrayBuffer], { type: contentType });
+    return blob;
   }
 };
 

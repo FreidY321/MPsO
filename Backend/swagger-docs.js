@@ -1888,3 +1888,174 @@
  *       403:
  *         $ref: '#/components/responses/ForbiddenError'
  */
+
+/**
+ * @swagger
+ * /api/reading-lists/books/batch:
+ *   post:
+ *     summary: Hromadné přidání knih do seznamu
+ *     description: Přidání více knih do seznamu četby žáka najednou s validací pravidel
+ *     tags: [Reading Lists]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - bookIds
+ *             properties:
+ *               bookIds:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *                 example: [1, 2, 3]
+ *     responses:
+ *       201:
+ *         description: Knihy přidány
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Knihy byly přidány do seznamu četby
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     added:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     errors:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           bookId:
+ *                             type: integer
+ *                           reason:
+ *                             type: string
+ *                 status:
+ *                   $ref: '#/components/schemas/ReadingListStatus'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
+
+/**
+ * @swagger
+ * /api/reading-lists/books:
+ *   delete:
+ *     summary: Hromadné odebrání knih ze seznamu
+ *     description: Odebrání více knih ze seznamu četby žáka najednou
+ *     tags: [Reading Lists]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - bookIds
+ *             properties:
+ *               bookIds:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *                 example: [1, 2, 3]
+ *     responses:
+ *       200:
+ *         description: Knihy odebrány
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Knihy byly odstraněny z tvého seznamu četby
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     removed:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     notFound:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                 status:
+ *                   $ref: '#/components/schemas/ReadingListStatus'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
+
+/**
+ * @swagger
+ * /api/reading-lists/class/{classId}/status:
+ *   get:
+ *     summary: Stav maturitních seznamů třídy
+ *     description: Získání stavu maturitních seznamů četby pro všechny žáky ve třídě (admin, učitel)
+ *     tags: [Reading Lists]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: classId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID třídy
+ *     responses:
+ *       200:
+ *         description: Stav třídy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     classId:
+ *                       type: integer
+ *                     totalStudents:
+ *                       type: integer
+ *                     completedStudents:
+ *                       type: integer
+ *                     pendingStudents:
+ *                       type: integer
+ *                     completionPercentage:
+ *                       type: integer
+ *                     studentStatuses:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */

@@ -1,239 +1,124 @@
-const PDFDocument = require('pdfkit');
+const puppeteer = require('puppeteer');
+const fs = require('fs');
+const path = require('path');
 const StudentBookRepository = require('../repositories/StudentBookRepository');
 const UserRepository = require('../repositories/UserRepository');
 const ClassRepository = require('../repositories/ClassRepository');
 
-/**
- * PdfService handles PDF generation for reading lists
- * Generates A4 formatted documents with headers, footers, and ordered book lists
- */
 class PdfService {
   constructor() {
     this.studentBookRepository = new StudentBookRepository();
     this.userRepository = new UserRepository();
     this.classRepository = new ClassRepository();
-    
-    // A4 dimensions in points (72 points per inch)
-    this.pageWidth = 595.28;  // 210mm
-    this.pageHeight = 841.89; // 297mm
-    this.margin = 50;
   }
 
   /**
-   * Generate PDF for a student's reading list
-   * @param {number} studentId - Student user ID
-   * @returns {Promise<PDFDocument>} PDF document stream
+   * Generate PDF for student reading list
+   * @param {number} studentId - Student ID
+   * @returns {Promise<Buffer>} PDF buffer
    */
   async generateReadingListPdf(studentId) {
-    // Fetch student data
+    const pdfBuffer = await this._createPdfDocumentWithPuppeteer(studentId);
+    return pdfBuffer;
+  }
+
+  /**
+   * Create PDF document using Puppeteer with HTML template
+   * @param {number} studentId - Student ID
+   * @returns {Promise<Buffer>} PDF buffer
+   */
+  async _createPdfDocumentWithPuppeteer(studentId) {
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+
+    // Get student data
     const student = await this.userRepository.findById(studentId);
     if (!student) {
-      throw new Error('Student not found');
+      throw new Error('Student nenalezen');
     }
 
-    // Fetch class data
-    let classData = null;
-    if (student.class_id) {
-      classData = await this.classRepository.findById(student.class_id);
-    }
+    // Get class students sorted by surname, name
+    const classStudents = await this.classRepository.getStudentsByClassId(student.class_id);
+    const idx = classStudents.findIndex(s => s.id === studentId);
+    const studentPosition = idx === -1 ? " " : idx;
 
-    // Fetch reading list with books ordered by literary_class and period
+    // Get student's reading list
     const books = await this.studentBookRepository.findByStudentId(studentId);
 
-    // Create PDF document with A4 size
-    const doc = new PDFDocument({
-      size: 'A4',
-      margins: {
-        top: this.margin,
-        bottom: this.margin,
-        left: this.margin,
-        right: this.margin
-      }
-    });
+    // Read HTML template
+    const templatePath = path.join(__dirname, '..', 'templates', 'reading-list.html');
+    let html = fs.readFileSync(templatePath, 'utf8');
 
-    // Add header
-    this._addHeader(doc, student, classData);
+    // Get absolute path to logo and encode as base64
+    const logoPath = path.join(__dirname, '..', 'logo-spsei.png');
+    const logoBase64 = fs.readFileSync(logoPath, 'base64');
+    const logoMimeType = 'image/png'; // nebo 'image/jpeg' podle vašeho obrázku
+    const logoUrl = `data:${logoMimeType};base64,${logoBase64}`;
 
-    // Add books list
-    this._addBooksList(doc, books);
+    // Format student full name
+    const studentFullName = [student.name, student.second_name, student.surname, student.second_surname]
+      .filter(Boolean)
+      .join(' ');
 
-    // Add footer
-    this._addFooter(doc);
+    // Format class name
+    const className = student.class_id ? 'Třída ' + student.class_id : '';
 
-    // Finalize PDF
-    doc.end();
+    // Generate books table rows
+    const booksTableRows = books.map((book, index) => `
+      <tr>
+        <td>${index + 1}</td>
+        <td>${book.id_book}</td>
+        <td class="book-author">${this.formatAuthor(book)}</td>
+        <td class="book-title">${this.escapeHtml(book.book_name)}</td>
+      </tr>
+    `).join('');
 
-    return doc;
+    // Replace placeholders
+    html = html
+      .replace('{studentFullName}', studentFullName)
+      .replace('{className}', className)
+      .replace('{studentPosition}', studentPosition)
+      .replace('{booksTableRows}', booksTableRows)
+      .replace('{todaysDate}', new Date().toLocaleDateString('cs-CZ'))
+      .replace('{schoolLogo}', logoUrl)
+
+    await page.setContent(html, {waitUntil: "networkidle0"});
+    const pdfData = await page.pdf();
+
+    await browser.close();
+
+    return Buffer.from(pdfData);
   }
 
   /**
-   * Add header to PDF with school logo, student name, and class
-   * @param {PDFDocument} doc - PDF document
-   * @param {Object} student - Student data
-   * @param {Object} classData - Class data
+   * Format author name
+   * @param {Object} book - Book object with author info
+   * @returns {string} Formatted author name
    */
-  _addHeader(doc, student, classData) {
-    const startY = doc.y;
-
-    // School logo placeholder (text for now since we don't have actual logo)
-    doc.fontSize(16)
-       .font('Helvetica-Bold')
-       .text('ŠKOLA LOGO', this.margin, startY, { align: 'center' });
-
-    doc.moveDown(0.5);
-
-    // Student name with degree
-    const studentName = [
-      student.degree,
-      student.name,
-      student.seccond_name,
-      student.surname,
-      student.second_surname
-    ].filter(Boolean).join(' ');
-
-    doc.fontSize(14)
-       .font('Helvetica-Bold')
-       .text(studentName, { align: 'center' });
-
-    // Class name
-    if (classData) {
-      doc.fontSize(12)
-         .font('Helvetica')
-         .text(`Třída: ${classData.name}`, { align: 'center' });
-    }
-
-    doc.moveDown(1);
-
-    // Title
-    doc.fontSize(16)
-       .font('Helvetica-Bold')
-       .text('Seznam povinné četby', { align: 'center' });
-
-    doc.moveDown(1.5);
+  formatAuthor(book) {
+    const parts = [
+      book.author_second_name,
+      book.author_name,
+      book.author_second_surname,
+      book.author_surname
+    ].filter(Boolean);
+    return parts.join(' ');
   }
 
   /**
-   * Add books list to PDF, ordered by literary_class and period
-   * @param {PDFDocument} doc - PDF document
-   * @param {Array} books - Array of books
+   * Escape HTML special characters
+   * @param {string} text - Text to escape
+   * @returns {string} Escaped text
    */
-  _addBooksList(doc, books) {
-    if (books.length === 0) {
-      doc.fontSize(12)
-         .font('Helvetica')
-         .text('Žádné knihy v seznamu četby.', { align: 'center' });
-      return;
-    }
-
-    // Group books by literary_class and period
-    const groupedBooks = this._groupBooks(books);
-
-    let bookNumber = 1;
-
-    // Iterate through literary classes
-    Object.keys(groupedBooks).sort().forEach(literaryClassName => {
-      const periods = groupedBooks[literaryClassName];
-
-      // Literary class header
-      doc.fontSize(14)
-         .font('Helvetica-Bold')
-         .text(literaryClassName, this.margin, doc.y);
-      
-      doc.moveDown(0.5);
-
-      // Iterate through periods within this literary class
-      Object.keys(periods).sort().forEach(periodName => {
-        const booksInPeriod = periods[periodName];
-
-        // Period subheader
-        doc.fontSize(12)
-           .font('Helvetica-Bold')
-           .text(`  ${periodName}`, this.margin + 10, doc.y);
-        
-        doc.moveDown(0.3);
-
-        // List books in this period
-        booksInPeriod.forEach(book => {
-          const authorName = [
-            book.author_name,
-            book.author_second_name,
-            book.author_surname,
-            book.author_second_surname
-          ].filter(Boolean).join(' ');
-
-          const bookLine = `    ${bookNumber}. ${book.book_name} - ${authorName}`;
-          
-          doc.fontSize(11)
-             .font('Helvetica')
-             .text(bookLine, this.margin + 20, doc.y);
-          
-          doc.moveDown(0.3);
-          bookNumber++;
-        });
-
-        doc.moveDown(0.3);
-      });
-
-      doc.moveDown(0.5);
-    });
-  }
-
-  /**
-   * Group books by literary_class and period
-   * @param {Array} books - Array of books
-   * @returns {Object} Nested object: { literaryClass: { period: [books] } }
-   */
-  _groupBooks(books) {
-    const grouped = {};
-
-    books.forEach(book => {
-      const literaryClass = book.literary_class_name;
-      const period = book.period_name;
-
-      if (!grouped[literaryClass]) {
-        grouped[literaryClass] = {};
-      }
-
-      if (!grouped[literaryClass][period]) {
-        grouped[literaryClass][period] = [];
-      }
-
-      grouped[literaryClass][period].push(book);
-    });
-
-    return grouped;
-  }
-
-  /**
-   * Add footer to PDF with print date and signature space
-   * @param {PDFDocument} doc - PDF document
-   */
-  _addFooter(doc) {
-    const bottomY = this.pageHeight - this.margin - 80;
-
-    // Move to footer position
-    doc.y = bottomY;
-
-    // Print date
-    const printDate = new Date().toLocaleDateString('cs-CZ');
-    doc.fontSize(10)
-       .font('Helvetica')
-       .text(`Datum tisku: ${printDate}`, this.margin, doc.y);
-
-    doc.moveDown(2);
-
-    // Signature lines
-    const signatureY = doc.y;
-    const leftX = this.margin;
-    const rightX = this.pageWidth / 2 + 20;
-
-    doc.fontSize(10)
-       .font('Helvetica')
-       .text('_________________________', leftX, signatureY)
-       .text('Podpis žáka', leftX, signatureY + 20);
-
-    doc.text('_________________________', rightX, signatureY)
-       .text('Podpis učitele', rightX, signatureY + 20);
+  escapeHtml(text) {
+    const map = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, m => map[m]);
   }
 }
 
