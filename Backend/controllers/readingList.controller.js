@@ -423,12 +423,81 @@ const getStudentReadingListPdf = asyncHandler(async (req, res) => {
   const pdfBuffer = await pdfService.generateReadingListPdf(parseInt(studentId));
 
   // Set response headers for PDF
-  res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `attachment; filename=reading-list-student-${studentId}.pdf`);
-  res.setHeader('Content-Length', pdfBuffer.length);
+  res.set({
+    'Content-Type': 'application/pdf',
+    'Content-Disposition': `attachment; filename=reading-list-student-${studentId}.pdf`
+  });
 
   // Send PDF buffer
   res.send(pdfBuffer);
+});
+
+/**
+ * Get reading list status for all classes taught by current teacher
+ * GET /api/reading-lists/classes/my/status
+ */
+const getMyClassesStatus = asyncHandler(async (req, res) => {
+  const teacherId = req.user.id;
+
+  // Get all classes taught by this teacher
+  const classes = await classRepository.findByTeacher(teacherId);
+
+  if (classes.length === 0) {
+    return res.json({
+      success: true,
+      data: {
+        classes: [],
+        totalClasses: 0
+      }
+    });
+  }
+
+  // Get status for each class
+  const classStatuses = [];
+  for (const classData of classes) {
+    const students = await classRepository.getStudentsByClassId(classData.id);
+    
+    // Get reading list status for each student
+    const studentStatuses = [];
+    let completedCount = 0;
+    
+    for (const student of students) {
+      const status = await readingListService.calculateReadingListStatus(student.id);
+      studentStatuses.push({
+        studentId: student.id,
+        name: student.name,
+        second_name: student.second_name,
+        surname: student.surname,
+        second_surname: student.second_surname,
+        ...status
+      });
+      
+      if (status.isComplete) {
+        completedCount++;
+      }
+    }
+
+    classStatuses.push({
+      classId: classData.id,
+      name: classData.name,
+      year_ended: classData.year_ended,
+      deadline: classData.deadline,
+      cj_teacher: classData.cj_teacher,
+      totalStudents: students.length,
+      completedStudents: completedCount,
+      pendingStudents: students.length - completedCount,
+      completionPercentage: students.length > 0 ? Math.round((completedCount / students.length) * 100) : 0,
+      studentStatuses
+    });
+  }
+
+  res.json({
+    success: true,
+    data: {
+      classes: classStatuses,
+      totalClasses: classStatuses.length
+    }
+  });
 });
 
 module.exports = {
@@ -444,5 +513,6 @@ module.exports = {
   getStudentReadingListStatus,
   getClassReadingListStatus,
   getMyReadingListPdf,
-  getStudentReadingListPdf
+  getStudentReadingListPdf,
+  getMyClassesStatus
 };
