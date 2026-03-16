@@ -1886,7 +1886,11 @@ function renderBooksTable() {
     
     tbody.innerHTML = state.books.map(book => {
         const author = state.authors.find(a => a.id === book.author_id);
-        const authorName = author ? `${author.name} ${author.surname}` : '-';
+        const authorName = author 
+            ? [author.name, author.second_name, author.surname, author.second_surname]
+                .filter(Boolean)
+                .join(' ')
+            : '-';
         
         const literaryClass = state.literaryClasses.find(lc => lc.id === book.literary_class);
         const literaryClassName = literaryClass ? literaryClass.name : '-';
