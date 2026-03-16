@@ -241,10 +241,6 @@ Include the scripts in your HTML pages:
 <script src="/public/js/auth.js"></script>
 ```
 
-## Testing
-
-A test page is available at `Frontend/test-utilities.html` to verify all utilities work correctly.
-
 ## Notes
 
 - All modules are exposed on the `window` object for easy access
