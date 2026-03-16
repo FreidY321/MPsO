@@ -40,7 +40,8 @@ class PdfService {
     // Get class students sorted by surname, name
     const classStudents = await this.classRepository.getStudentsByClassId(student.class_id);
     const idx = classStudents.findIndex(s => s.id === studentId);
-    const studentPosition = idx === -1 ? " " : idx;
+    // We add 1 because array index starts from zero
+    const studentPosition = idx === -1 ? " " : idx + 1;
 
     // Get student's reading list
     const books = await this.studentBookRepository.findByStudentId(studentId);
@@ -60,8 +61,9 @@ class PdfService {
       .filter(Boolean)
       .join(' ');
 
+    const studentsClass = await this.classRepository.findById(student.class_id);
     // Format class name
-    const className = student.class_id ? 'Třída ' + student.class_id : '';
+    const className = studentsClass.name ? studentsClass.name : '';
 
     // Generate books table rows
     const booksTableRows = books.map((book, index) => `
