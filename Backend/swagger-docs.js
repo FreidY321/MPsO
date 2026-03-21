@@ -2059,3 +2059,38 @@
  *       403:
  *         $ref: '#/components/responses/ForbiddenError'
  */
+
+/**
+ * @swagger
+ * /api/reading-lists/classes/my/status:
+ *   get:
+ *     summary: Stav maturitních seznamů všech tříd
+ *     description: Získání stavu maturitních seznamů četby pro všechny třídy (admin, učitel)
+ *     tags: [Reading Lists]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Stav tříd
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     classes:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     totalClasses:
+ *                       type: integer
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */

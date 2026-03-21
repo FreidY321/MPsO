@@ -35,6 +35,6 @@ router.get('/:studentId', authorizeRole(['admin', 'teacher']), getStudentReading
 router.get('/:studentId/pdf', authorizeRole(['admin', 'teacher']), getStudentReadingListPdf);
 router.get('/:studentId/status', authorizeRole(['admin', 'teacher']), getStudentReadingListStatus);
 router.get('/class/:classId/status', authorizeRole(['admin', 'teacher']), getClassReadingListStatus);
-router.get('/classes/my/status', authorizeRole(['teacher']), getMyClassesStatus);
+router.get('/classes/my/status', authorizeRole(['admin', 'teacher']), getMyClassesStatus);
 
 module.exports = router;

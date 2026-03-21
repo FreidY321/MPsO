@@ -437,10 +437,14 @@ const getStudentReadingListPdf = asyncHandler(async (req, res) => {
  * GET /api/reading-lists/classes/my/status
  */
 const getMyClassesStatus = asyncHandler(async (req, res) => {
-  const teacherId = req.user.id;
-
-  // Get all classes taught by this teacher
-  const classes = await classRepository.findByTeacher(teacherId);
+  let classes;
+  if (req.user.role === 'teacher') {
+    const teacherId = req.user.id;
+    // Get all classes taught by this teacher
+    classes = await classRepository.findByTeacher(teacherId);
+  }else{
+    classes = await classRepository.findAll();
+  }
 
   if (classes.length === 0) {
     return res.json({

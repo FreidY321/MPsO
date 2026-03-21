@@ -7,10 +7,6 @@ const options = {
       title: 'Povinná Četba API',
       version: '1.0.0',
       description: 'API pro správu povinné četby - systém pro evidenci a validaci seznamů četby žáků',
-      contact: {
-        name: 'API Support',
-        email: 'support@example.com'
-      }
     },
     servers: [
       {
