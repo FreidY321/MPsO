@@ -304,6 +304,11 @@ const getStudentsByClass = asyncHandler(async (req, res) => {
 const resetPassword = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
+  // Prevent self-password reset
+  if (req.user.id === parseInt(id)) {
+    throw new AppError('Nemůžeš resetovat heslo svého vlastního účtu', 403);
+  }
+
   // Check if user exists
   const user = await userRepository.findById(id);
   if (!user) {
