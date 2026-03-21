@@ -163,7 +163,7 @@ function displayLiteraryClassProgress() {
     
     const percentage = item.maxAllowed > 0 
       ? Math.min((item.currentCount / item.maxAllowed) * 100, 100)
-      : 0;
+      : (item.isSatisfied ? 100 : Math.min((item.currentCount / item.minRequired) * 100, 100));
     
     let fillClass = '';
     let statusText = '';
@@ -187,7 +187,7 @@ function displayLiteraryClassProgress() {
       <div class="progress-bar">
         <div class="progress-fill ${fillClass}" style="width: ${percentage}%"></div>
       </div>
-      <div class="progress-count">${item.currentCount} / ${item.minRequired}-${item.maxAllowed}</div>
+      <div class="progress-count">${item.currentCount} / ${item.maxAllowed ? item.minRequired :'min. ' +  item.minRequired}${item.maxAllowed ? '-' + item.maxAllowed : ''}</div>
     `;
     
     literaryClassProgress.appendChild(progressItem);
@@ -210,7 +210,7 @@ function displayPeriodProgress() {
     
     const percentage = item.maxAllowed > 0 
       ? Math.min((item.currentCount / item.maxAllowed) * 100, 100)
-      : 0;
+      : (item.isSatisfied ? 100 : Math.min((item.currentCount / item.minRequired) * 100, 100));
     
     let fillClass = '';
     let statusText = '';
@@ -234,7 +234,7 @@ function displayPeriodProgress() {
       <div class="progress-bar">
         <div class="progress-fill ${fillClass}" style="width: ${percentage}%"></div>
       </div>
-      <div class="progress-count">${item.currentCount} / ${item.minRequired}-${item.maxAllowed}</div>
+      <div class="progress-count">${item.currentCount} / ${item.maxAllowed ? item.minRequired :'min. ' +  item.minRequired}${item.maxAllowed ? '-' + item.maxAllowed : ''}</div>
     `;
     
     periodProgress.appendChild(progressItem);
