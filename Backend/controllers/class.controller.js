@@ -58,10 +58,8 @@ const createClassValidation = [
     .trim()
     .notEmpty()
     .withMessage('Jméno třídy je povinné.')
-    .isLength({ min: 3, max: 3 })
-    .withMessage('Jméno třídy musí mít 3 znaky.')
-    .matches(/^[IE][1-4][A-D]$/)
-    .withMessage('Jméno třídy nesmí obsahovat nic kromě číslic a písmen.'),
+    .isLength({ min: 2, max: 4 })
+    .withMessage('Jméno třídy musí mít minimálně 2 znaky a maximálně 4.'),
   body('year_ended')
     .notEmpty()
     .withMessage('Rok ukončení je povinný.')
@@ -134,10 +132,8 @@ const updateClassValidation = [
     .trim()
     .notEmpty()
     .withMessage('Jméno třídy je povinné.')
-    .isLength({ min: 3, max: 3 })
-    .withMessage('Jméno třídy musí mít 3 znaky.')
-    .matches(/^[IE][1-4][A-D]$/)
-    .withMessage('Jméno třídy nesmí obsahovat nic kromě číslic a písmen.'),
+    .isLength({ min: 2, max: 4 })
+    .withMessage('Jméno třídy musí mít minimálně 2 znaky a maximálně 4.'),
   body('year_ended')
     .optional({values: 'null'})
     .isInt({ min: 2000, max: 2100 })
