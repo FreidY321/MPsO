@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   getAllClasses,
   getClassById,
+  getClassDeadline,
   createClass,
   createClassValidation,
   updateClass,
@@ -24,6 +25,13 @@ router.get('/', authenticateToken, authorizeRole(['admin', 'teacher']), getAllCl
  * @access  Private (admin, teacher)
  */
 router.get('/:id', authenticateToken, authorizeRole(['admin', 'teacher']), getClassById);
+
+/**
+ * @route   GET /api/classes/:id/deadline
+ * @desc    Get class deadline by ID
+ * @access  Private (admin, teacher, student)
+ */
+router.get('/:id/deadline', authenticateToken, getClassDeadline);
 
 /**
  * @route   POST /api/classes

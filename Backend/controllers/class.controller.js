@@ -243,9 +243,31 @@ const deleteClass = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * Get class deadline by ID
+ * GET /api/classes/:id/deadline
+ */
+const getClassDeadline = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const classData = await classRepository.findById(id);
+
+  if (!classData) {
+    throw new AppError('Třída nenalezena', 404);
+  }
+
+  res.json({
+    success: true,
+    data: {
+      deadline: classData.deadline
+    }
+  });
+});
+
 module.exports = {
   getAllClasses,
   getClassById,
+  getClassDeadline,
   createClass,
   createClassValidation,
   updateClass,

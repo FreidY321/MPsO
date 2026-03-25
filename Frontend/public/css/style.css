@@ -419,6 +419,30 @@ textarea.valid {
     font-weight: 500;
 }
 
+.deadline-info {
+    font-size: 14px;
+    font-weight: 500;
+    margin-top: 8px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    display: inline-block;
+}
+
+.deadline-info.expired {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.deadline-info.today {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.deadline-info.active {
+    background: #d1fae5;
+    color: #065f46;
+}
+
 /* Statistics Section */
 .statistics-section {
     background: white;

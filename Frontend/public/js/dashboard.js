@@ -8,6 +8,7 @@
 let currentUser = null;
 let readingList = [];
 let readingListStatus = null;
+let classDeadline = null;
 
 // DOM Elements
 const userName = document.getElementById('userName');
@@ -46,6 +47,9 @@ async function init() {
     return;
   }
 
+  // Load class deadline
+  await loadClassDeadline();
+
   // Display user info
   displayUserInfo();
 
@@ -70,6 +74,57 @@ function displayUserInfo() {
     userClass.textContent = `Třída ${currentUser.class_id}`;
   } else {
     userClass.textContent = 'Nepřiřazeno';
+  }
+  
+  // Display deadline info
+  if (classDeadline) {
+    const deadlineDate = new Date(classDeadline);
+    const today = new Date();
+    const diffTime = deadlineDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    let deadlineText = '';
+    let deadlineClass = 'deadline-info';
+    
+    // Format deadline date to Czech format using utils
+    const formattedDate = window.utils.dateFormat.toCzechDate(deadlineDate);
+    
+    if (diffDays < 0) {
+      deadlineText = `Deadline: ${formattedDate} (vypršel)`;
+      deadlineClass += ' expired';
+    } else if (diffDays === 0) {
+      deadlineText = `Deadline: Dnes (${formattedDate})`;
+      deadlineClass += ' today';
+    } else if (diffDays === 1) {
+      deadlineText = `Deadline: Zítra (${formattedDate})`;
+      deadlineClass += ' active';
+    } else {
+      deadlineText = `Deadline: ${formattedDate} (za ${diffDays} dní)`;
+      deadlineClass += ' active';
+    }
+    
+    userDeadline.textContent = deadlineText;
+    userDeadline.className = deadlineClass;
+    userDeadline.style.display = 'block';
+  }
+}
+
+/**
+ * Load class deadline from API
+ */
+async function loadClassDeadline() {
+  if (!currentUser.class_id) {
+    return;
+  }
+  
+  try {
+    const response = await window.api.get(`/classes/${currentUser.class_id}/deadline`);
+    
+    if (response.success) {
+      classDeadline = response.data.deadline;
+    }
+  } catch (error) {
+    console.error('Error loading class deadline:', error);
   }
 }
 
