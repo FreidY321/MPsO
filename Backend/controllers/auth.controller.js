@@ -164,12 +164,21 @@ const changePassword = asyncHandler(async (req, res) => {
  * Google OAuth initiation
  * GET /api/auth/google
  * Redirects to Google OAuth consent screen with account selection prompt
+ * Supports isMobileRequest parameter to determine redirect after auth
  */
-const googleAuth = passport.authenticate('google', {
-  scope: ['profile', 'email'],
-  session: false,
-  prompt: 'select_account'
-});
+const googleAuth = (req, res, next) => {
+  const { isMobileRequest } = req.query;
+  
+  // Store isMobileRequest directly in state parameter as string
+  const state = isMobileRequest === 'true' ? 'mobile' : 'web';
+  
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+    session: false,
+    prompt: 'select_account',
+    state
+  })(req, res, next);
+};
 
 /**
  * Google OAuth callback
@@ -211,16 +220,15 @@ const googleAuthCallback = (req, res, next) => {
  * Determines redirect based on client type (web/mobile)
  */
 const handleAuthSuccess = (req, res, token, user) => {
+  // Check isMobileRequest from state parameter
   const { state } = req.query;
-  const isMobileRequest = detectMobileRequest(req, state);
+  const isMobileRequest = state === "mobile";
 
   if (isMobileRequest) {
-    // For mobile apps, use custom scheme redirect
     const mobileScheme = process.env.MOBILE_APP_SCHEME || 'myapp';
     return res.redirect(`${mobileScheme}://auth/callback?token=${token}&success=true`);
   }
 
-  // For web applications, redirect to login page with token
   const webOrigin = process.env.CORS_ORIGIN;
   return res.redirect(`${webOrigin}/pages/login.html?token=${token}`);
 };
@@ -230,60 +238,18 @@ const handleAuthSuccess = (req, res, token, user) => {
  * Determines redirect based on client type (web/mobile)
  */
 const handleAuthError = (req, res, errorMessage) => {
+  // Check isMobileRequest from state parameter
   const { state } = req.query;
-  const isMobileRequest = detectMobileRequest(req, state);
+  const isMobileRequest = state === "mobile";
   const encodedError = encodeURIComponent(errorMessage);
 
   if (isMobileRequest) {
-    // For mobile apps, use custom scheme redirect with error
     const mobileScheme = process.env.MOBILE_APP_SCHEME || 'myapp';
     return res.redirect(`${mobileScheme}://auth/callback?error=${encodedError}&success=false`);
   }
 
-  // For web applications, redirect to login page with error
   const webOrigin = process.env.CORS_ORIGIN;
   return res.redirect(`${webOrigin}/pages/login.html?error=${encodedError}`);
-};
-
-/**
- * Detects if the request comes from a mobile application
- * Uses multiple detection methods for reliability
- */
-const detectMobileRequest = (req, state) => {
-  // Method 1: Check state parameter for mobile indicator
-  if (state && state.includes('mobile')) {
-    return true;
-  }
-
-  // Method 2: Check User-Agent for mobile patterns
-  const userAgent = req.get('User-Agent') || '';
-  const mobilePatterns = [
-    /Mobile/i,
-    /Android/i,
-    /iPhone/i,
-    /iPad/i,
-    /iPod/i,
-    /BlackBerry/i,
-    /Windows Phone/i
-  ];
-
-  if (mobilePatterns.some(pattern => pattern.test(userAgent))) {
-    return true;
-  }
-
-  // Method 3: Check custom header set by mobile app
-  const clientType = req.get('X-Client-Type');
-  if (clientType === 'mobile') {
-    return true;
-  }
-
-  // Method 4: Check referer for mobile app indicators
-  const referer = req.get('Referer') || '';
-  if (referer.includes('mobile') || referer.includes('app')) {
-    return true;
-  }
-
-  return false;
 };
 
 module.exports = {
@@ -295,6 +261,5 @@ module.exports = {
   googleAuth,
   googleAuthCallback,
   handleAuthSuccess,
-  handleAuthError,
-  detectMobileRequest
+  handleAuthError
 };
