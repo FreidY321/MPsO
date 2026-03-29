@@ -14,7 +14,7 @@ class ReadingListService {
 
   /**
    * Validate if a book can be added to student's reading list
-   * Checks the max 2 books per author rule
+   * Checks the max books per author rule
    * @param {number} studentId - Student user ID
    * @param {number} bookId - Book ID to add
    * @returns {Promise<Object>} { canAdd: boolean, reason: string }
@@ -39,22 +39,22 @@ class ReadingListService {
       };
     }
 
-    // Check author limit (max 2 books per author)
+    // Check author limit (max books per author)
     const authorBookCount = await this.studentBookRepository.getAuthorBookCount(studentId, book.author_id);
     
-    if (authorBookCount >= 2) {
+    if (authorBookCount >= process.env.MAX_BOOKS_PER_AUTHOR) {
       return {
         canAdd: false,
-        reason: `Už máš ${authorBookCount} knihy od tohoto autora. Maximum jsou 2 knihy od stejného autora. Nelze tudíž přidat další.`
+        reason: `Už máš ${authorBookCount} knihy od tohoto autora. Maximum jsou ${process.env.MAX_BOOKS_PER_AUTHOR} knihy od stejného autora. Nelze tudíž přidat další.`
       };
     }
 
     // Check count of the books
     const books = await this.studentBookRepository.findByStudentId(studentId);
-    if(books.length >= 20){
+    if(books.length >= process.env.TOTAL_BOOKS_REQUIRED){
       return {
         canAdd: false,
-        reason: 'Už máš 20 knih v seznamu četby'
+        reason: `Už máš ${process.env.TOTAL_BOOKS_REQUIRED} knih v seznamu četby`
       };
     }
 
@@ -126,19 +126,19 @@ class ReadingListService {
       authorCountsMap[ac.author_id] = {
         fullName,
         count: parseInt(ac.count) || 0,
-        canAddMore: (parseInt(ac.count) || 0) < 2
+        canAddMore: (parseInt(ac.count) || 0) < process.env.MAX_BOOKS_PER_AUTHOR
       };
     });
 
     // Check if all requirements are satisfied
     const allLiteraryClassesSatisfied = literaryClassProgress.every(lc => lc.isSatisfied && !lc.isOverLimit);
     const allPeriodsSatisfied = periodProgress.every(p => p.isSatisfied && !p.isOverLimit);
-    const isComplete = allLiteraryClassesSatisfied && allPeriodsSatisfied && totalBooks == 20;
+    const isComplete = allLiteraryClassesSatisfied && allPeriodsSatisfied && totalBooks == process.env.TOTAL_BOOKS_REQUIRED;
     // Collect violations
     const violations = [];
 
-    if(totalBooks != 20){
-      violations.push(`V povinné četbě je potřeba mít přesně 20 knih`);
+    if(totalBooks != process.env.TOTAL_BOOKS_REQUIRED){
+      violations.push(`V povinné četbě je potřeba mít přesně ${process.env.TOTAL_BOOKS_REQUIRED} knih`);
     }
     
     literaryClassProgress.forEach(lc => {

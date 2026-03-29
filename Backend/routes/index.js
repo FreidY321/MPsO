@@ -10,6 +10,7 @@ const literaryClassRoutes = require('./literaryClass.routes');
 const periodRoutes = require('./period.routes');
 const bookRoutes = require('./book.routes');
 const readingListRoutes = require('./readingList.routes');
+const infoRoutes = require('./info.routes');
 
 // Mount routes
 router.use('/auth', authRoutes);
@@ -20,6 +21,7 @@ router.use('/literary-classes', literaryClassRoutes);
 router.use('/periods', periodRoutes);
 router.use('/books', bookRoutes);
 router.use('/reading-lists', readingListRoutes);
+router.use('/info', infoRoutes);
 
 // Health check endpoint
 router.get('/health', (req, res) => {
