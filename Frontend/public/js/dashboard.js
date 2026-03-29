@@ -9,6 +9,7 @@ let currentUser = null;
 let readingList = [];
 let readingListStatus = null;
 let classDeadline = null;
+let infoSettings = null;
 
 // DOM Elements
 const userName = document.getElementById('userName');
@@ -49,6 +50,9 @@ async function init() {
 
   // Load class deadline
   await loadClassDeadline();
+
+  // Load info settings
+  await loadInfoSettings();
 
   // Display user info
   displayUserInfo();
@@ -129,6 +133,21 @@ async function loadClassDeadline() {
 }
 
 /**
+ * Load info settings from API
+ */
+async function loadInfoSettings() {
+  try {
+    const response = await window.api.get('/info');
+    
+    if (response.success) {
+      infoSettings = response.data;
+    }
+  } catch (error) {
+    console.error('Error loading info settings:', error);
+  }
+}
+
+/**
  * Load reading list from API
  * Requirements: 5.3
  */
@@ -189,7 +208,7 @@ function displayStatistics() {
   // Display completed counts
   literaryClassesCompleted.textContent = `${completedLiteraryClasses}/${totalLiteraryClasses}`;
   periodsCompleted.textContent = `${completedPeriods}/${totalPeriods}`;
-  totalBooksEl.textContent = readingListStatus.totalBooks || 0;
+  totalBooksEl.textContent = readingListStatus.totalBooks + "/" + infoSettings?.readingSettings?.totalBooks || 0;
   
   // Literary class progress
   displayLiteraryClassProgress();
@@ -259,7 +278,6 @@ function displayPeriodProgress() {
   
   readingListStatus.periodProgress.forEach(item => {
     const progressItem = document.createElement('a');
-    console.log(item);
     progressItem.className = 'progress-item';
     progressItem.href =`#${item.name}`;
     
@@ -304,6 +322,9 @@ function displayAuthorCounts() {
   
   authorCounts.innerHTML = '';
   
+  // Get max books per author from info settings
+  const maxPerAuthor = infoSettings?.readingSettings?.maxPerAutor || 2;
+
   // Convert to array and sort by count descending
   const authors = Object.entries(readingListStatus.authorCounts)
     .map(([id, data]) => ({ id, ...data }))
@@ -312,11 +333,11 @@ function displayAuthorCounts() {
   authors.forEach(author => {
     const authorItem = document.createElement('div');
     authorItem.className = 'author-item';
-    
+  
     let countClass = '';
     let statusText = '';
     
-    if (author.count == 2) {
+    if (author.count == maxPerAuthor) {
       countClass = 'warning';
       statusText = 'Max';
     } else if (author.canAddMore) {

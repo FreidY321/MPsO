@@ -13,6 +13,7 @@ let periods = [];
 let authors = [];
 let readingListStatus = null;
 let readingListBooks = [];
+let infoSettings = null;
 
 // DOM Elements
 const searchInput = document.getElementById('searchInput');
@@ -49,6 +50,9 @@ async function init() {
 
   // Load initial data
   await loadInitialData();
+  
+  // Load info settings
+  await loadInfoSettings();
 
   // Attach event listeners
   attachEventListeners();
@@ -176,6 +180,21 @@ async function loadReadingList() {
 }
 
 /**
+ * Load info settings from API
+ */
+async function loadInfoSettings() {
+  try {
+    const response = await window.api.get('/info');
+    
+    if (response.success) {
+      infoSettings = response.data;
+    }
+  } catch (error) {
+    console.error('Error loading info settings:', error);
+  }
+}
+
+/**
  * Load books from API with filters
  * Requirements: 2.5
  */
@@ -244,11 +263,11 @@ function populateFilters() {
   });
   
   // Populate author filter
-  authorFilter.innerHTML = '<option value="">Všichni</option>';
+  authorFilter.innerHTML = '';
   authors.forEach(author => {
     const option = document.createElement('option');
-    option.value = author.id;
     const fullName = window.utils.stringFormat.formatFullName(author);
+    option.value = fullName;
     option.textContent = fullName;
     authorFilter.appendChild(option);
   });
@@ -259,15 +278,24 @@ function populateFilters() {
  */
 function applySearchFilter() {
   const searchTerm = searchInput.value.trim().toLowerCase();
+  const authorSearchTerm = authorFilter.value.trim().toLowerCase();
   
-  if (!searchTerm) {
+  if (!searchTerm && !authorSearchTerm) {
     filteredBooks = [...allBooks];
     return;
   }
   
-  filteredBooks = allBooks.filter(book => 
-    book.name.toLowerCase().includes(searchTerm)
-  );
+  filteredBooks = allBooks.filter(book => {
+    const matchesSearch = !searchTerm || book.name.toLowerCase().includes(searchTerm);
+    
+    // Author search - match against full name
+    const fullName = [book.author_name, book.author_second_name, book.author_surname, book.author_second_surname]
+      .filter(Boolean)
+      .join(' ');
+    const matchesAuthor = !authorSearchTerm || fullName.toLowerCase().includes(authorSearchTerm);
+    
+    return matchesSearch && matchesAuthor;
+  });
 }
 
 /**
@@ -337,16 +365,14 @@ function createBookCard(book) {
   // Check if author limit is reached
   const authorLimitReached = isAuthorLimitReached(book.author_id);
   
-  console.log(book,isInList);
-  // Determine if add button should be disabled
-  const canAdd = !isInList && !authorLimitReached;
-  
+  const maxPerAuthor = infoSettings?.readingSettings?.maxPerAutor || 2;
+    
   // Create status message
   let statusHtml = '';
   if (isInList) {
     statusHtml = '<div class="book-card-status in-list">✓ V seznamu</div>';
   } else if (authorLimitReached) {
-    statusHtml = '<div class="book-card-status author-limit">⚠ Limit autora (2/2)</div>';
+    statusHtml = `<div class="book-card-status author-limit">⚠ Limit autora (${maxPerAuthor}/${maxPerAuthor})</div>`;
   }
   
   // Button text and action
@@ -355,7 +381,7 @@ function createBookCard(book) {
     : `onclick="addBookToList(${book.id})"`;
   const buttonText = isInList 
     ? 'Odstranit' 
-    : (authorLimitReached ? '⚠ Limit autora' : 'Přidat do seznamu');
+    : (authorLimitReached ? `⚠ Limit autora (${maxPerAuthor}/${maxPerAuthor})` : 'Přidat do seznamu');
   
   card.innerHTML = `
     <div class="book-card-header">
@@ -426,7 +452,8 @@ function isAuthorLimitReached(authorId) {
     return false;
   }
   
-  return authorCount.count >= 2;
+  const maxPerAuthor = infoSettings?.readingSettings?.maxPerAutor || 2;
+  return authorCount.count >= maxPerAuthor;
 }
 
 /**
@@ -501,22 +528,31 @@ async function removeBookFromList(bookId) {
 }
 
 /**
- * Handle filter change
+ * Handle filter change with debounce
  */
 async function handleFilterChange() {
-  
-  try {
-    // Reload books with new filters
-    await loadBooks();
-    
-    // Display updated books
-    displayBooks();
-  } catch (error) {
-    console.error('Error applying filters:', error);
-    window.utils.notification.error('Chyba při filtrování knih: ' + error.message);
-  } finally {
-    hideLoading();
+  // Clear existing timer
+  if (filterDebounceTimer) {
+    clearTimeout(filterDebounceTimer);
   }
+  
+  // Set new timer
+  filterDebounceTimer = setTimeout(async () => {
+    showLoading();
+    
+    try {
+      // Reload books with new filters
+      await loadBooks();
+      
+      // Display updated books
+      displayBooks();
+    } catch (error) {
+      console.error('Error applying filters:', error);
+      window.utils.notification.error('Chyba při filtrování knih: ' + error.message);
+    } finally {
+      hideLoading();
+    }
+  }, 300); // 300ms delay
 }
 
 /**
@@ -571,7 +607,7 @@ function attachEventListeners() {
   }
   
   if (authorFilter) {
-    authorFilter.addEventListener('change', handleFilterChange);
+    authorFilter.addEventListener('input', handleFilterChange);
   }
   
   if (clearFiltersBtn) {
