@@ -218,7 +218,7 @@ function renderClassesTable() {
     if (state.classes.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="table-empty">
+                <td colspan="7" class="table-empty">
                     <p>Zatím nejsou vytvořeny žádné třídy</p>
                 </td>
             </tr>
@@ -242,6 +242,9 @@ function renderClassesTable() {
                     <div class="table-actions">
                         <button class="btn btn-sm btn-view" onclick="viewClassStudents(${cls.id})">
                             Žáci
+                        </button>
+                        <button class="btn btn-sm btn-secondary" onclick="downloadClassXlsx(${cls.id})">
+                            XLSX
                         </button>
                         <button class="btn btn-sm btn-edit" onclick="editClass(${cls.id})">
                             Upravit
@@ -2215,3 +2218,28 @@ createModal = function(config) {
     return originalCreateModal(config);
 };
 
+// Download class XLSX
+async function downloadClassXlsx(classId) {
+    showLoading();
+
+    try {
+        const blob = await window.api.downloadFile(`/reading-lists/class/${classId}/xlsx`);
+
+        // Create download link
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `četba-${classId}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        showNotification('Seznam četby byl úspěšně stažen', 'success');
+
+    } catch (error) {
+        showNotification('Chyba při stahování seznamu četby: ' + error.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}

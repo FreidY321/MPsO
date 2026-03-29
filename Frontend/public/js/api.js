@@ -41,6 +41,11 @@ function buildHeaders(customHeaders = {}) {
 async function handleResponse(response) {
   const contentType = response.headers.get('content-type');
   
+  // Handle binary responses (PDF, XLSX)
+  if (contentType && (contentType.includes('application/pdf') || contentType.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'))) {
+    return await response.blob();
+  }
+  
   // Parse JSON response
   let data;
   if (contentType && contentType.includes('application/json')) {
@@ -95,6 +100,12 @@ async function request(endpoint, options = {}) {
   try {
     const response = await fetch(url, config);
     clearTimeout(timeoutId);
+    
+    // For download requests, return the blob directly
+    if (options.returnBlob) {
+      return await response.blob();
+    }
+    
     return await handleResponse(response);
   } catch (error) {
     clearTimeout(timeoutId);

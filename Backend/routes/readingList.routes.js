@@ -14,7 +14,8 @@ const {
   getClassReadingListStatus,
   getMyReadingListPdf,
   getStudentReadingListPdf,
-  getMyClassesStatus
+  getMyClassesStatus,
+  getClassReadingListXlsx
 } = require('../controllers/readingList.controller');
 const { authenticateToken, authorizeRole } = require('../middleware/auth');
 
@@ -36,5 +37,6 @@ router.get('/:studentId/pdf', authorizeRole(['admin', 'teacher']), getStudentRea
 router.get('/:studentId/status', authorizeRole(['admin', 'teacher']), getStudentReadingListStatus);
 router.get('/class/:classId/status', authorizeRole(['admin', 'teacher']), getClassReadingListStatus);
 router.get('/classes/my/status', authorizeRole(['admin', 'teacher']), getMyClassesStatus);
+router.get('/class/:classId/xlsx', authorizeRole('admin'), getClassReadingListXlsx);
 
 module.exports = router;

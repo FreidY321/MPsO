@@ -4,6 +4,7 @@ const UserRepository = require('../repositories/UserRepository');
 const ClassRepository = require('../repositories/ClassRepository');
 const ReadingListService = require('../services/ReadingListService');
 const PdfService = require('../services/PdfService');
+const XlsxService = require('../services/XlsxService');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 
@@ -12,6 +13,7 @@ const userRepository = new UserRepository();
 const classRepository = new ClassRepository();
 const readingListService = new ReadingListService();
 const pdfService = new PdfService();
+const xlsxService = new XlsxService();
 
 /**
  * Get reading list for current student
@@ -504,6 +506,32 @@ const getMyClassesStatus = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * Generate XLSX for all students in a class
+ * GET /api/reading-lists/class/:classId/xlsx
+ */
+const getClassReadingListXlsx = asyncHandler(async (req, res) => {
+  const { classId } = req.params;
+
+  // Check if class exists
+  const classData = await classRepository.findById(classId);
+  if (!classData) {
+    throw new AppError('Třída nebyla nalezena', 404);
+  }
+
+  // Generate XLSX
+  const xlsxBuffer = await xlsxService.generateClassReadingListXlsx(parseInt(classId));
+
+  // Set response headers for XLSX
+  res.set({
+    'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'Content-Disposition': `attachment; filename=cetba-${classData.name}.xlsx`
+  });
+
+  // Send XLSX buffer
+  res.send(xlsxBuffer);
+});
+
 module.exports = {
   getMyReadingList,
   getStudentReadingList,
@@ -518,5 +546,6 @@ module.exports = {
   getClassReadingListStatus,
   getMyReadingListPdf,
   getStudentReadingListPdf,
-  getMyClassesStatus
+  getMyClassesStatus,
+  getClassReadingListXlsx
 };
