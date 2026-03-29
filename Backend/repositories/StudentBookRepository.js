@@ -68,25 +68,6 @@ class StudentBookRepository {
    * @throws {Error} If book is already in student's reading list
    */
   async addBook(studentId, bookId) {
-    
-    // Check if book already exists in student's reading list
-    const exists = await this.hasBook(studentId, bookId);
-    if (exists) {
-      throw new Error('Kniha už je v tvém seznamu četby');
-    }
-
-    const bookRepository = new BookRepository();
-    const book = await bookRepository.findById(bookId);
-    const authorBookCount = await this.getAuthorBookCount(studentId, book.author_id);
-    if (authorBookCount >= 2) {
-      throw new Error('Už máš 2 knihy od tohoto autora');
-    }
-
-    const booksCount = await this.getBookCount(studentId);
-    if (booksCount >= 20) {
-      throw new Error('Už máš 20 knih v seznamu četby, nemůžeš přidat další knihu');
-    }
-    
     const whenAdded = new Date().toISOString().slice(0, 19).replace('T', ' ');
     const sql = `
       INSERT INTO ${this.tableName} (id_student, id_book, when_added)
