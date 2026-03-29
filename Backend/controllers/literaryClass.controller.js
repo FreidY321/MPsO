@@ -53,12 +53,6 @@ const createLiteraryClassValidation = [
     .optional({values: 'null'})
     .isInt({ min: 0 })
     .withMessage('Maximální počet knih musí být přirozené číslo nebo nula.')
-    .custom((value, { req }) => {
-      if (value < req.body.min_request) {
-        throw new Error('Maximální počet knih se musí rovnat nebo být větší než minimální počet knih.');
-      }
-      return true;
-    })
 ];
 
 /**
@@ -81,12 +75,20 @@ const createLiteraryClass = asyncHandler(async (req, res) => {
     throw new AppError('Literární druh s tímto jménem již existuje', 409);
   }
 
-  // Create literary class data object
-  const literaryClassData = {
-    name,
-    min_request,
-    max_request
-  };
+
+  const literaryClassData = { name };
+  
+  if (min_request !== null && min_request !== undefined) {
+    literaryClassData.min_request = min_request;
+  }
+  
+  if (max_request !== null && max_request !== undefined) {
+    literaryClassData.max_request = max_request;
+  }
+
+  if(max_request !== null && max_request !== undefined && min_request !== null && min_request !== undefined && max_request < min_request){
+    throw new AppError('Maximální počet knih se musí rovnat nebo být větší než minimální počet knih', 400);
+  }
 
   // Create literary class
   const newLiteraryClass = await literaryClassRepository.create(literaryClassData);
@@ -118,13 +120,6 @@ const updateLiteraryClassValidation = [
     .optional({values: 'null'})
     .isInt({ min: 0 })
     .withMessage('Maximální počet knih musí být přirozené číslo nebo nula.')
-    .custom((value, { req }) => {
-      const minRequest = req.body.min_request;
-      if (minRequest !== undefined && value < minRequest) {
-        throw new Error('Maximální počet knih se musí rovnat nebo být větší než minimální počet knih.');
-      }
-      return true;
-    })
 ];
 
 /**
@@ -157,15 +152,19 @@ const updateLiteraryClass = asyncHandler(async (req, res) => {
   }
 
   // Validate min/max relationship if only one is being updated
-  if (updateData.max_request !== undefined && updateData.max_request !== null && updateData.min_request === undefined) {
+  if (updateData.max_request !== undefined && updateData.max_request !== null && updateData.min_request === undefined && existingLiteraryClass.min_request !== null) {
     if (updateData.max_request < existingLiteraryClass.min_request) {
-      throw new AppError('Maximální počet knih se musí rovnat nebo být větší než minimální počet knih', 400);
+      throw new AppError('Maximální počet se musí rovnat nebo být větší než minimální počet.', 400);
     }
   }
-  if (updateData.min_request !== undefined && updateData.min_request !== null && updateData.max_request === undefined) {
+  if (updateData.min_request !== undefined && updateData.min_request !== null && updateData.max_request === undefined && existingLiteraryClass.max_request !== null) {
     if (updateData.min_request > existingLiteraryClass.max_request) {
-      throw new AppError('Minimální počet knih se musí rovnat nebo být menší než maximální počet knih', 400);
+      throw new AppError('Minimální počet se musí rovnat nebo být menší než maximální počet.', 400);
     }
+  }
+
+  if(updateData.max_request !== null && updateData.max_request !== undefined && updateData.min_request !== null && updateData.min_request !== undefined && updateData.max_request < updateData.min_request){
+    throw new AppError('Maximální počet se musí rovnat nebo být větší než minimální počet.', 400);
   }
 
   // Update literary class

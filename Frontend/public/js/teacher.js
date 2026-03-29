@@ -298,7 +298,6 @@ async function viewStudentReadingList(studentId, studentName) {
     try {
         const response = await apiRequest(`/reading-lists/${studentId}`);
         const readingList = response.data;
-        console.log(readingList)
         if (!readingList || readingList.length === 0) {
             showNotification(`${studentName} zatím nemá vytvořený maturitní list`, 'info');
             hideLoading();
@@ -998,12 +997,13 @@ function renderLiteraryClassesTable() {
     }
     
     tbody.innerHTML = state.literaryClasses.map(lc => {
-        const max_request = lc.max_request ? `${lc.max_request}` : '-';
+        const maxRequest = lc.max_request != null ? lc.max_request : '-';
+        const minRequest = lc.min_request != null ? lc.min_request : '-';
         return `
             <tr>
                 <td><strong>${escapeHtml(lc.name)}</strong></td>
-                <td>${lc.min_request}</td>
-                <td>${max_request}</td>
+                <td>${minRequest}</td>
+                <td>${maxRequest}</td>
                 <td>
                     <div class="table-actions">
                         <button class="btn btn-sm btn-edit" onclick="editLiteraryClass(${lc.id})">
@@ -1034,12 +1034,13 @@ function renderPeriodsTable() {
     }
     
     tbody.innerHTML = state.periods.map(period => {
-        const max_request = period.max_request ? `${period.max_request}` : '-';
+        const maxRequest = period.max_request != null ? period.max_request : '-';
+        const minRequest = period.min_request != null ? period.min_request : '-';
         return `
             <tr>
                 <td><strong>${escapeHtml(period.name)}</strong></td>
-                <td>${period.min_request}</td>
-                <td>${max_request}</td>
+                <td>${minRequest}</td>
+                <td>${maxRequest}</td>
                 <td>
                     <div class="table-actions">
                         <button class="btn btn-sm btn-edit" onclick="editPeriod(${period.id})">
@@ -1065,24 +1066,24 @@ function showLiteraryClassModal(literaryClassId = null) {
             <form id="literaryClassForm">
                 <div class="form-row single">
                     <div class="form-group">
-                        <label for="literaryClassName">Název *</label>
-                        <input type="text" id="literaryClassName" name="name" 
+                        <label for="lcName">Název *</label>
+                        <input type="text" id="lcName" name="name" 
                                value="${lc ? escapeHtml(lc.name) : ''}" 
-                               placeholder="např. Epika" required>
+                               placeholder="např. Próza" required>
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="literaryClassMin">Minimální počet *</label>
-                        <input type="number" id="literaryClassMin" name="min_request" 
-                               value="${lc ? lc.min_request : 0}" 
-                               min="0" required>
+                        <label for="lcMinRequest">Minimální počet knih</label>
+                        <input type="number" id="lcMinRequest" name="min_request" 
+                               value="${lc ? lc.min_request : ''}" 
+                               min="0" max="100" placeholder="Volitelné">
                     </div>
                     <div class="form-group">
-                        <label for="literaryClassMax">Maximální počet</label>
-                        <input type="number" id="literaryClassMax" name="max_request" 
-                               value="${lc && lc.max_request ? lc.max_request : ''}" 
-                               min="0" placeholder="Volitelné">
+                        <label for="lcMaxRequest">Maximální počet knih</label>
+                        <input type="number" id="lcMaxRequest" name="max_request" 
+                               value="${lc ? lc.max_request : ''}" 
+                               min="0" max="100" placeholder="Volitelné">
                     </div>
                 </div>
             </form>
@@ -1108,30 +1109,32 @@ async function saveLiteraryClass(literaryClassId) {
     const form = document.getElementById('literaryClassForm');
     const formData = new FormData(form);
     
+    const name = window.utils.stringFormat.sanitize(formData.get('name'));
+    const minRequestValue = formData.get('min_request');
+    const maxRequestValue = formData.get('max_request');
+
     const newData = {
-        name: window.utils.stringFormat.sanitize(formData.get('name')),
-        min_request: parseInt(formData.get('min_request')),
-        max_request: parseInt(formData.get('max_request'))
+        name: name,
+        min_request: minRequestValue === '' ? null : parseInt(minRequestValue),
+        max_request: maxRequestValue === '' ? null : parseInt(maxRequestValue)
     };
     
     // Validation
-    if (!newData.name || isNaN(newData.min_request)) {
-        showNotification('Vyplňte všechna povinná pole', 'error');
+    if (!name) {
+        showNotification('Název literárního druhu je povinný', 'error');
         return;
     }
 
-    if(newData.max_request == NaN){
-        newData.max_request = null;
-    }
-    
-    if (newData.max_request && newData.min_request > newData.max_request) {
-        showNotification('Minimální počet nemůže být větší než maximální', 'error');
-        return;
+    // If both min and max are provided, validate relationship
+    if (newData.min_request !== null && newData.max_request !== null) {
+        if (newData.min_request > newData.max_request) {
+            showNotification('Minimální počet nemůže být větší než maximální', 'error');
+            return;
+        }
     }
     
     // If editing, send only changed fields
     let data = newData;
-    console.log(data);
     if (literaryClassId) {
         const originalLC = state.literaryClasses.find(lc => lc.id === literaryClassId);
         data = {};
@@ -1232,15 +1235,15 @@ function showPeriodModal(periodId = null) {
                         <label for="periodName">Název *</label>
                         <input type="text" id="periodName" name="name" 
                                value="${period ? escapeHtml(period.name) : ''}" 
-                               placeholder="např. Romantismus" required>
+                               placeholder="např. Česká literatura 20. a 21. století" required>
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="periodMin">Minimální počet *</label>
+                        <label for="periodMin">Minimální počet</label>
                         <input type="number" id="periodMin" name="min_request" 
-                               value="${period ? period.min_request : 0}" 
-                               min="0" required>
+                               value="${period ? period.min_request : ''}" 
+                               min="0" placeholder="Volitelné">
                     </div>
                     <div class="form-group">
                         <label for="periodMax">Maximální počet</label>
@@ -1272,25 +1275,29 @@ async function savePeriod(periodId) {
     const form = document.getElementById('periodForm');
     const formData = new FormData(form);
     
+    // Get values - use null if empty
+    const name = window.utils.stringFormat.sanitize(formData.get('name'));
+    const minRequestValue = formData.get('min_request');
+    const maxRequestValue = formData.get('max_request');
+    
     const newData = {
-        name: window.utils.stringFormat.sanitize(formData.get('name')),
-        min_request: parseInt(formData.get('min_request'))
+        name: name,
+        min_request: minRequestValue === '' ? null : parseInt(minRequestValue),
+        max_request: maxRequestValue === '' ? null : parseInt(maxRequestValue)
     };
     
-    const maxRequest = window.utils.stringFormat.sanitize(formData.get('max_request'));
-    if (maxRequest) {
-        newData.max_request = parseInt(maxRequest);
-    }
-    
-    // Validation
-    if (!newData.name || isNaN(newData.min_request)) {
-        showNotification('Vyplňte všechna povinná pole', 'error');
+    // Validation - name is required
+    if (!name) {
+        showNotification('Název období je povinný', 'error');
         return;
     }
     
-    if (newData.max_request && newData.min_request > newData.max_request) {
-        showNotification('Minimální počet nemůže být větší než maximální', 'error');
-        return;
+    // If both min and max are provided, validate relationship
+    if (newData.min_request !== null && newData.max_request !== null) {
+        if (newData.min_request > newData.max_request) {
+            showNotification('Minimální počet nemůže být větší než maximální', 'error');
+            return;
+        }
     }
     
     // If editing, send only changed fields
@@ -1306,7 +1313,7 @@ async function savePeriod(periodId) {
         if (newData.min_request !== originalPeriod.min_request) {
             data.min_request = newData.min_request;
         }
-        if ((newData.max_request || null) !== (originalPeriod.max_request || null)) {
+        if (newData.max_request !== originalPeriod.max_request) {
             data.max_request = newData.max_request;
         }
         

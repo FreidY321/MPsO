@@ -47,17 +47,13 @@ const createPeriodValidation = [
     .notEmpty()
     .withMessage('Název období je povinné.'),
   body('min_request')
+    .optional({values: 'null'})
     .isInt({ min: 0 })
     .withMessage('Minimální počet musí být přirozené číslo.'),
   body('max_request')
+    .optional({values: 'null'})
     .isInt({ min: 0 })
     .withMessage('Maximální počet musí být přirozené číslo.')
-    .custom((value, { req }) => {
-      if (value < req.body.min_request) {
-        throw new Error('Maximální počet musí být vetší nebo roven minimálnímu počtu.');
-      }
-      return true;
-    })
 ];
 
 /**
@@ -80,12 +76,19 @@ const createPeriod = asyncHandler(async (req, res) => {
     throw new AppError('Období s tímto názvem již existuje', 409);
   }
 
-  // Create period data object
-  const periodData = {
-    name,
-    min_request,
-    max_request
-  };
+  const periodData = { name };
+  
+  if (min_request !== null && min_request !== undefined) {
+    periodData.min_request = min_request;
+  }
+  
+  if (max_request !== null && max_request !== undefined) {
+    periodData.max_request = max_request;
+  }
+
+  if(max_request !== null && max_request !== undefined && min_request !== null && min_request !== undefined && max_request < min_request){
+    throw new AppError('Maximální počet knih se musí rovnat nebo být větší než minimální počet knih', 400);
+  }
 
   // Create period
   const newPeriod = await periodRepository.create(periodData);
@@ -110,20 +113,13 @@ const updatePeriodValidation = [
     .notEmpty()
     .withMessage('Název období je povinný.'),
   body('min_request')
-    .optional()
+    .optional({values: 'null'})
     .isInt({ min: 0 })
     .withMessage('Minimální počet musí být přirozené číslo nebo nula.'),
   body('max_request')
-    .optional()
+    .optional({values: 'null'})
     .isInt({ min: 0 })
     .withMessage('Maximální počet musí být přirozené číslo nebo nula.')
-    .custom((value, { req }) => {
-      const minRequest = req.body.min_request;
-      if (minRequest !== undefined && value < minRequest) {
-        throw new Error('Maximální počet musí být větší nebo roven minimálnímu počtu.');
-      }
-      return true;
-    })
 ];
 
 /**
@@ -156,15 +152,19 @@ const updatePeriod = asyncHandler(async (req, res) => {
   }
 
   // Validate min/max relationship if only one is being updated
-  if (updateData.max_request !== undefined && updateData.max_request !== null && updateData.min_request === undefined) {
+  if (updateData.max_request !== undefined && updateData.max_request !== null && updateData.min_request === undefined && existingPeriod.min_request !== null) {
     if (updateData.max_request < existingPeriod.min_request) {
       throw new AppError('Maximální počet musí být větší nebo roven minimálnímu počtu.', 400);
     }
   }
-  if (updateData.min_request !== undefined && updateData.min_request !== null && updateData.max_request === undefined) {
+  if (updateData.min_request !== undefined && updateData.min_request !== null && updateData.max_request === undefined && existingPeriod.max_request !== null) {
     if (updateData.min_request > existingPeriod.max_request) {
       throw new AppError('Minimální počet musí být menší nebo roven maximálnímu počtu.', 400);
     }
+  }
+
+  if(updateData.max_request !== null && updateData.max_request !== undefined && updateData.min_request !== null && updateData.min_request !== undefined && updateData.max_request < updateData.min_request){
+    throw new AppError('Maximální počet se musí rovnat nebo být větší než minimální počet.', 400);
   }
 
   // Update period
