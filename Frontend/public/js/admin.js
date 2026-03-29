@@ -2225,11 +2225,13 @@ async function downloadClassXlsx(classId) {
     try {
         const blob = await window.api.downloadFile(`/reading-lists/class/${classId}/xlsx`);
 
+        const className = state.classes.find(c => c.id === classId)?.name || classId;
+
         // Create download link
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `četba-${classId}.xlsx`;
+        a.download = `četba-${className}.xlsx`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
