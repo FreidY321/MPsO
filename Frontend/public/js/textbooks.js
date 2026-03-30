@@ -14,6 +14,7 @@ let authors = [];
 let readingListStatus = null;
 let readingListBooks = [];
 let infoSettings = null;
+let filterDebounceTimer = null;
 
 // DOM Elements
 const searchInput = document.getElementById('searchInput');
