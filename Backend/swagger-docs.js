@@ -2062,6 +2062,38 @@
 
 /**
  * @swagger
+ * /api/reading-lists/class/{classId}/xlsx:
+ *   get:
+ *     summary: XLSX seznamu četby třídy
+ *     description: Vygenerování XLSX souboru se seznamem četby pro všechny žáky ve třídě (admin, učitel)
+ *     tags: [Reading Lists]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: classId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID třídy
+ *     responses:
+ *       200:
+ *         description: XLSX soubor
+ *         content:
+ *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
+
+/**
+ * @swagger
  * /api/reading-lists/classes/my/status:
  *   get:
  *     summary: Stav maturitních seznamů všech tříd

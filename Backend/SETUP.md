@@ -22,15 +22,6 @@ cd Backend
 npm install
 ```
 
-This will install all required dependencies:
-- express (web framework)
-- mysql2 (MariaDB driver)
-- bcrypt (password hashing)
-- jsonwebtoken (JWT authentication)
-- express-validator (input validation)
-- cors (CORS middleware)
-- dotenv (environment variables)
-
 ### 3. Configure Database
 
 1. Make sure MariaDB is running
@@ -73,29 +64,3 @@ You should see:
   "message": "API is running"
 }
 ```
-
-## Troubleshooting
-
-### Database Connection Issues
-
-If you see "Database connection failed":
-1. Check that MariaDB is running
-2. Verify credentials in `.env` file
-3. Ensure the database `MaturitniCetba` exists
-4. Check that the user has proper permissions
-
-### Port Already in Use
-
-If port 3000 is already in use, change the PORT in `.env` file:
-```
-PORT=3001
-```
-
-## Next Steps
-
-After successful setup, you can proceed with implementing:
-- Authentication endpoints
-- User management
-- Class management
-- Book management
-- Reading list functionality

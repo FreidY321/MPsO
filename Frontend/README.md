@@ -34,42 +34,21 @@ node server.js
 Frontend bude dostupný na:
 - **Hlavní URL:** http://localhost:8080/
 - **Login stránka:** http://localhost:8080/pages/login.html
-- **Test utilities:** http://localhost:8080/test-utilities.html
-
-### Alternativní způsoby
-
-#### 1. Pomocí Live Server (VS Code)
-
-1. Nainstalujte rozšíření "Live Server"
-2. Klikněte pravým tlačítkem na `index.html`
-3. Vyberte "Open with Live Server"
-
-#### 2. Pomocí Python HTTP serveru
-
-```bash
-# Python 3
-python -m http.server 8080
-
-# Nebo Python 2
-python -m SimpleHTTPServer 8080
-```
-
-#### 3. Pomocí npx http-server
-
-```bash
-npx http-server -p 8080
-```
 
 ### Backend server
 
-Nezapomeňte spustit také backend:
+Prvně prosím nastavte .env soubor podle Backend\.env.example
+
+Nezapomeňte spustit také backend (tudíž předtím i databázi): 
 
 ```bash
 cd Backend
-node server.js
+npm run dev
 ```
 
 Backend API běží na http://localhost:3000/api
+
+Pokud bude jiné api na backend je potřeba ho změnit v souboru Frontend\public\js\api.js a Frontend\public\js\auth.js úplně nahoře v nastavení
 
 ## Přihlašovací stránka
 
