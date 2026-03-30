@@ -194,7 +194,6 @@ module.exports = {
   login,
   loginValidation,
   logout,
-  changePasswordValidation,
   googleAuth,
   googleAuthCallback,
   handleAuthSuccess,
