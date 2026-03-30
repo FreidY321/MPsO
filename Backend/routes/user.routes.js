@@ -61,9 +61,9 @@ router.post('/', authenticateToken, authorizeRole('admin'), createUserValidation
 /**
  * @route   PUT /api/users/:id
  * @desc    Update user
- * @access  Private (users can update their own profile, admin can update all)
+ * @access  Private (admin)
  */
-router.put('/:id', authenticateToken, updateUserValidation, updateUser);
+router.put('/:id', authenticateToken, authorizeRole('admin'), updateUserValidation, updateUser);
 
 /**
  * @route   POST /api/users/:id/reset-password
