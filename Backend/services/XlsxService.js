@@ -63,7 +63,7 @@ class XlsxService {
   async _prepareWorksheetData(students) {
     const header = ['Email', 'Jméno', 'Třída'];
 
-    for (let i = 0; i <= 20; i++) {
+    for (let i = 1; i <= 20; i++) {
       header.push(`O${i}`);
     }
 
