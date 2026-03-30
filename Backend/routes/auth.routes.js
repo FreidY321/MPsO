@@ -4,7 +4,6 @@ const {
   login, 
   loginValidation, 
   logout, 
-  changePassword, 
   changePasswordValidation,
   googleAuth,
   googleAuthCallback
@@ -24,13 +23,6 @@ router.post('/login', loginValidation, login);
  * @access  Public
  */
 router.post('/logout', logout);
-
-/**
- * @route   POST /api/auth/change-password
- * @desc    Change user password
- * @access  Private (requires authentication)
- */
-router.post('/change-password', authenticateToken, changePasswordValidation, changePassword);
 
 /**
  * @route   GET /api/auth/google

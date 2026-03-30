@@ -99,68 +99,6 @@ const logout = asyncHandler(async (req, res) => {
 });
 
 /**
- * Change password validation rules
- */
-const changePasswordValidation = [
-  body('oldPassword')
-    .notEmpty()
-    .withMessage('Momentální heslo je povinné'),
-  body('newPassword')
-    .notEmpty()
-    .withMessage('Nové heslo je povinné')
-    .isLength({ min: 8 })
-    .withMessage('Nové heslo musí mít minimálně 8 znaků')
-];
-
-/**
- * Change password endpoint
- * POST /api/auth/change-password
- * Requires authentication
- */
-const changePassword = asyncHandler(async (req, res) => {
-  // Check validation errors
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    const errorMessage = errors.array().map(error => error.msg).join('<br> ');
-    throw new AppError(errorMessage, 400, errors.array());
-  }
-
-  const { oldPassword, newPassword } = req.body;
-  const userId = req.user.id; // From authenticateToken middleware
-
-  // Get user from database
-  const user = await userRepository.findById(userId);
-  
-  if (!user) {
-    throw new AppError('Uživatel nebyl nalezen', 404);
-  }
-
-  // Check if user has a password (might be Google OAuth only)
-  if (!user.password) {
-    throw new AppError('Tento uživatel používá Google přihlášení, nemá zde uložené heslo', 400);
-  }
-
-  // Verify old password
-  const { comparePassword: comparePwd, hashPassword: hashPwd } = require('../utils/password');
-  const isOldPasswordValid = await comparePwd(oldPassword, user.password);
-  
-  if (!isOldPasswordValid) {
-    throw new AppError('Momentální heslo je špatně', 401);
-  }
-
-  // Hash new password
-  const hashedNewPassword = await hashPwd(newPassword);
-
-  // Update password in database
-  await userRepository.update(userId, { password: hashedNewPassword });
-
-  res.json({
-    success: true,
-    message: 'Heslo bylo úspěšně změněno'
-  });
-});
-
-/**
  * Google OAuth initiation
  * GET /api/auth/google
  * Redirects to Google OAuth consent screen with account selection prompt
@@ -256,7 +194,6 @@ module.exports = {
   login,
   loginValidation,
   logout,
-  changePassword,
   changePasswordValidation,
   googleAuth,
   googleAuthCallback,
