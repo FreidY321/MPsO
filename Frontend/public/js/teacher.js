@@ -7,7 +7,8 @@ const state = {
     books: [],
     authors: [],
     literaryClasses: [],
-    periods: []
+    periods: [],
+    infoSettings: null
 };
 
 // Helper function for notifications
@@ -116,6 +117,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    // Load info settings
+    await loadInfoSettings();
+
     // Setup navigation
     setupNavigation();
     
@@ -125,6 +129,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Load initial section
     await loadSection('classes');
 });
+
+// Load info settings
+async function loadInfoSettings() {
+    try {
+        const response = await apiRequest('/info');
+        const info = response.data;
+        
+        // Store in state
+        state.infoSettings = {
+            schoolName: info.school?.name || 'SPŠEI Ostrava',
+            totalBooks: info.readingSettings?.totalBooks || 20,
+            maxPerAuthor: info.readingSettings?.maxPerAutor || 2
+        };
+        
+        // Store globally for other functions
+        window.infoSettings = state.infoSettings;
+        
+    } catch (error) {
+        console.error('Error loading info settings:', error);
+    }
+}
 
 // Navigation setup
 function setupNavigation() {
@@ -184,15 +209,9 @@ async function loadClasses() {
     showLoading();
     
     try {
-        // Load all classes
-        const classesResponse = await apiRequest('/classes');
-        const allClasses = classesResponse.data || [];
-        
-        // Get current user
-        const user = window.auth.getUser();
-        
-        // Filter only classes where this teacher is cj_teacher
-        state.classes = allClasses.filter(cls => cls.cj_teacher === user.id);
+        // Load all classes with reading list status for current teacher
+        const response = await apiRequest('/reading-lists/classes/my/status');
+        state.classes = response.data.classes || [];
         
         // Render classes table
         renderClassesTable();
@@ -227,18 +246,20 @@ function renderClassesTable() {
             minute: '2-digit'
         }) : '-';
         
+        const progressText = `${cls.completedStudents} z ${cls.totalStudents} hotovo (${cls.completionPercentage}%)`;
+        
         return `
             <tr>
                 <td><strong>${escapeHtml(cls.name)}</strong></td>
                 <td>${cls.year_ended}</td>
                 <td>${deadline}</td>
-                <td>${cls.student_count || 0}</td>
+                <td>${progressText}</td>
                 <td>
                     <div class="table-actions">
-                        <button class="btn btn-sm btn-view" onclick="viewClassStudents(${cls.id})">
+                        <button class="btn btn-sm btn-view" onclick="viewClassStudents(${cls.classId || cls.id})">
                             Žáci
                         </button>
-                        <button class="btn btn-sm btn-edit" onclick="editClassDeadline(${cls.id})">
+                        <button class="btn btn-sm btn-edit" onclick="editClassDeadline(${cls.classId || cls.id})">
                             Změnit deadline
                         </button>
                     </div>
@@ -252,27 +273,55 @@ async function viewClassStudents(classId) {
     showLoading();
     
     try {
-        const response = await apiRequest(`/classes/${classId}`);
-        const cls = response.data;
-        const students = cls.students || [];
+        // Get class with students and their reading list status
+        const response = await apiRequest(`/reading-lists/class/${classId}/status`);
+        const classData = response.data;
+        const studentStatuses = classData.studentStatuses || [];
         
-        const studentsHtml = students.length > 0 
-            ? students.map(s => `
-                <div class="result-item" style="cursor: pointer; transition: background 0.2s;" 
-                     onclick="viewStudentReadingList(${s.id}, '${escapeHtml(s.name)} ${escapeHtml(s.surname)}')">
-                    <strong>${escapeHtml(s.name)} ${escapeHtml(s.surname)}</strong>
-                    <div>${escapeHtml(s.email)}</div>
-                </div>
-            `).join('')
-            : '<p style="text-align: center; color: #999;">Ve třídě nejsou žádní žáci</p>';
+        // Separate completed and pending students
+        const completedStudents = studentStatuses.filter(s => s.isComplete);
+        const pendingStudents = studentStatuses.filter(s => !s.isComplete);
+        
+        let studentsHtml = '';
+        
+        if (studentStatuses.length === 0) {
+            studentsHtml = '<p style="text-align: center; color: #999;">Ve třídě nejsou žádní žáci</p>';
+        } else {
+            studentsHtml = '<div style="margin-bottom: 16px; padding: 12px; background: #e8f5e9; border-radius: 8px; font-size: 14px;">';
+            studentsHtml += `<strong>Celkem:</strong> ${classData.totalStudents} žáků | <strong>Hotovo:</strong> ${classData.completedStudents} | <strong>Čeká:</strong> ${classData.pendingStudents}`;
+            studentsHtml += '</div>';
+            if (completedStudents.length > 0) {
+                studentsHtml += '<div style="margin-bottom: 16px;"><h4 style="margin: 0 0 8px 0; font-size: 14px; color: #2e7d32;">Hotovo:</h4>';
+                studentsHtml += completedStudents.map(s => `
+                    <div class="result-item" style="cursor: pointer; transition: background 0.2s; border-left: 3px solid #2e7d32;" 
+                         onclick="viewStudentReadingList(${s.studentId}, '${escapeHtml(s.name)} ${escapeHtml(s.surname)}')">
+                        <strong>${escapeHtml(s.name)} ${escapeHtml(s.surname)}</strong>
+                        <div>${s.totalBooks} / ${infoSettings?.totalBooks} knih</div>
+                    </div>
+                `).join('');
+                studentsHtml += '</div>';
+            }
+            
+            if (pendingStudents.length > 0) {
+                studentsHtml += '<div><h4 style="margin: 0 0 8px 0; font-size: 14px; color: #c62828;">Nemají hotovo:</h4>';
+                studentsHtml += pendingStudents.map(s => `
+                    <div class="result-item" style="cursor: pointer; transition: background 0.2s; border-left: 3px solid #c62828;" 
+                         onclick="viewStudentReadingList(${s.studentId}, '${escapeHtml(s.name)} ${escapeHtml(s.surname)}')">
+                        <strong>${escapeHtml(s.name)} ${escapeHtml(s.surname)}</strong>
+                        <div>${s.totalBooks} / ${infoSettings?.totalBooks} knih</div>
+                    </div>
+                `).join('');
+                studentsHtml += '</div>';
+            }
+        }
         
         const modal = createModal({
-            title: `Žáci třídy ${escapeHtml(cls.name)}`,
+            title: `Žáci třídy ${escapeHtml(classData.name)}`,
             content: `
                 <div class="results-container">
                     ${studentsHtml}
                 </div>
-                ${students.length > 0 ? '<p style="margin-top: 16px; font-size: 13px; color: #666;">Klikněte na žáka pro zobrazení jeho maturitního listu</p>' : ''}
+                ${studentStatuses.length > 0 ? '<p style="margin-top: 16px; font-size: 13px; color: #666;">Klikněte na žáka pro zobrazení jeho maturitního listu</p>' : ''}
             `,
             buttons: [
                 {
@@ -303,13 +352,20 @@ async function viewStudentReadingList(studentId, studentName) {
             hideLoading();
             return;
         }
-        const booksHtml = readingList.map(book => `
+        const booksHtml = readingList.map(book => {
+            const authorName = window.utils.stringFormat.formatAuthorName({
+                name: book.author_name,
+                second_name: book.author_second_name,
+                surname: book.author_surname,
+                second_surname: book.author_second_surname
+            });
+            return `
             <div class="result-item">
-                <strong>${escapeHtml(book.name)}</strong>
-                <div>Autor: ${escapeHtml(book.author_name)}</div>
+                <strong>${escapeHtml(book.book_name)}</strong>
+                <div>Autor: ${escapeHtml(authorName)}</div>
                 <div>Druh: ${escapeHtml(book.literary_class_name)} | Období: ${escapeHtml(book.period_name)}</div>
             </div>
-        `).join('');
+        `}).join('');
         
         const modal = createModal({
             title: `Maturitní list - ${studentName}`,
