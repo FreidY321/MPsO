@@ -396,7 +396,7 @@ async function viewStudentReadingList(studentId, studentName) {
 }
 
 function editClassDeadline(classId) {
-    const cls = state.classes.find(c => c.id === classId);
+    const cls = state.classes.find(c => c.classId === classId);
     if (!cls) return;
     
     const deadlineValue = cls.deadline 
