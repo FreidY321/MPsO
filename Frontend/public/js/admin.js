@@ -579,7 +579,7 @@ function renderUsersTable() {
                 <td>${escapeHtml(className)}</td>
                 <td>
                     <div class="table-actions">
-                        ${user.role === 'student' ? `
+                        ${user.id !== window.auth.getUser()?.id && !user.google_id ? `
                             <button class="btn btn-sm btn-reset" onclick="resetUserPassword(${user.id})">
                                 Reset hesla
                             </button>
