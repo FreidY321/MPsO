@@ -63,9 +63,15 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 /**
  * Get user by ID
  * GET /api/users/:id
+ * Students can only view their own profile, admins can view all
  */
 const getUserById = asyncHandler(async (req, res) => {
   const { id } = req.params;
+  
+  // Check if user is admin or trying to view their own profile
+  if (req.user.role !== 'admin' && req.user.id !== parseInt(id)) {
+    throw new AppError('Nemáte povoleno vidět tento profil', 403);
+  }
   
   const user = await userRepository.findById(id);
   
