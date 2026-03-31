@@ -1,7 +1,6 @@
 /**
  * Centralized error handling middleware
  * Catches all errors and returns consistent JSON responses
- * Requirements: 8.3 - Consistent error response format with HTTP status codes
  */
 const errorHandler = (err, req, res, next) => {
   console.error('Error:', err);
