@@ -356,6 +356,7 @@ const getClassReadingListStatus = asyncHandler(async (req, res) => {
     success: true,
     data: {
       classId,
+      name: classData.name,
       totalStudents: students.length,
       completedStudents: completedCount,
       pendingStudents: students.length - completedCount,

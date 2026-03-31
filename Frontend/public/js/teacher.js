@@ -288,7 +288,7 @@ async function viewClassStudents(classId) {
             studentsHtml = '<p style="text-align: center; color: #999;">Ve třídě nejsou žádní žáci</p>';
         } else {
             studentsHtml = '<div style="margin-bottom: 16px; padding: 12px; background: #e8f5e9; border-radius: 8px; font-size: 14px;">';
-            studentsHtml += `<strong>Celkem:</strong> ${classData.totalStudents} žáků | <strong>Hotovo:</strong> ${classData.completedStudents} | <strong>Čeká:</strong> ${classData.pendingStudents}`;
+            studentsHtml += `<strong>Celkem žáků:</strong> ${classData.totalStudents} | <strong>Hotovo:</strong> ${classData.completedStudents} | <strong>Čeká:</strong> ${classData.pendingStudents}`;
             studentsHtml += '</div>';
             if (completedStudents.length > 0) {
                 studentsHtml += '<div style="margin-bottom: 16px;"><h4 style="margin: 0 0 8px 0; font-size: 14px; color: #2e7d32;">Hotovo:</h4>';
@@ -314,7 +314,6 @@ async function viewClassStudents(classId) {
                 studentsHtml += '</div>';
             }
         }
-        
         const modal = createModal({
             title: `Žáci třídy ${escapeHtml(classData.name)}`,
             content: `
